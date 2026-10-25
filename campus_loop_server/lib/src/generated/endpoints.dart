@@ -10,11 +10,16 @@
 // ignore_for_file: invalid_use_of_internal_member
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:campus_loop_server/src/generated/activities/models/activity_kind.dart'
+    as _iu1qkyfe;
+import 'package:campus_loop_server/src/generated/activities/models/create_activity_request.dart'
+    as _iftmrj3u;
 import 'package:serverpod/serverpod.dart' as _is;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _iacs;
 import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _iais;
+import '../activities/activity_endpoint.dart' as _i8zt5649;
 import '../auth/email_idp_endpoint.dart' as _iuc1hd5t;
 import '../auth/jwt_refresh_endpoint.dart' as _inwq3ztq;
 import '../greetings/greeting_endpoint.dart' as _il624ik7;
@@ -23,6 +28,12 @@ class Endpoints extends _is.EndpointDispatch {
   @override
   void initializeEndpoints(_is.Server server) {
     var endpoints = <String, _is.Endpoint>{
+      'activity': _i8zt5649.ActivityEndpoint()
+        ..initialize(
+          server,
+          'activity',
+          null,
+        ),
       'emailIdp': _iuc1hd5t.EmailIdpEndpoint()
         ..initialize(
           server,
@@ -42,6 +53,163 @@ class Endpoints extends _is.EndpointDispatch {
           null,
         ),
     };
+    connectors['activity'] = _is.EndpointConnector(
+      name: 'activity',
+      endpoint: endpoints['activity']!,
+      methodConnectors: {
+        'listUpcoming': _is.MethodConnector(
+          name: 'listUpcoming',
+          params: {
+            'kind': _is.ParameterDescription(
+              name: 'kind',
+              type: _is.getType<_iu1qkyfe.ActivityKind?>(),
+              nullable: true,
+            ),
+            'limit': _is.ParameterDescription(
+              name: 'limit',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _is.ParameterDescription(
+              name: 'offset',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .listUpcoming(
+                    session,
+                    params['kind'],
+                    params['limit'],
+                    params['offset'],
+                  ),
+        ),
+        'getActivity': _is.MethodConnector(
+          name: 'getActivity',
+          params: {
+            'activityId': _is.ParameterDescription(
+              name: 'activityId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .getActivity(
+                    session,
+                    params['activityId'],
+                  ),
+        ),
+        'createActivity': _is.MethodConnector(
+          name: 'createActivity',
+          params: {
+            'request': _is.ParameterDescription(
+              name: 'request',
+              type: _is.getType<_iftmrj3u.CreateActivityRequest>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .createActivity(
+                    session,
+                    params['request'],
+                  ),
+        ),
+        'joinActivity': _is.MethodConnector(
+          name: 'joinActivity',
+          params: {
+            'activityId': _is.ParameterDescription(
+              name: 'activityId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .joinActivity(
+                    session,
+                    params['activityId'],
+                  ),
+        ),
+        'leaveActivity': _is.MethodConnector(
+          name: 'leaveActivity',
+          params: {
+            'activityId': _is.ParameterDescription(
+              name: 'activityId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .leaveActivity(
+                    session,
+                    params['activityId'],
+                  ),
+        ),
+        'cancelActivity': _is.MethodConnector(
+          name: 'cancelActivity',
+          params: {
+            'activityId': _is.ParameterDescription(
+              name: 'activityId',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .cancelActivity(
+                    session,
+                    params['activityId'],
+                  ),
+        ),
+        'listMyPlans': _is.MethodConnector(
+          name: 'listMyPlans',
+          params: {
+            'limit': _is.ParameterDescription(
+              name: 'limit',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+            'offset': _is.ParameterDescription(
+              name: 'offset',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['activity'] as _i8zt5649.ActivityEndpoint)
+                  .listMyPlans(
+                    session,
+                    params['limit'],
+                    params['offset'],
+                  ),
+        ),
+      },
+    );
     connectors['emailIdp'] = _is.EndpointConnector(
       name: 'emailIdp',
       endpoint: endpoints['emailIdp']!,
