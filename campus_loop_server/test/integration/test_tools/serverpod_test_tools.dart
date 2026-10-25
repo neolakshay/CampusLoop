@@ -13,6 +13,16 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _ida;
 import 'dart:io' as _idi;
+import 'package:campus_loop_server/src/generated/activities/models/activity_details.dart'
+    as _i2gnt1bi;
+import 'package:campus_loop_server/src/generated/activities/models/activity_kind.dart'
+    as _iu1qkyfe;
+import 'package:campus_loop_server/src/generated/activities/models/activity_plan.dart'
+    as _i1ksolij;
+import 'package:campus_loop_server/src/generated/activities/models/campus_activity.dart'
+    as _imev5sfu;
+import 'package:campus_loop_server/src/generated/activities/models/create_activity_request.dart'
+    as _iftmrj3u;
 import 'package:campus_loop_server/src/generated/greetings/greeting.dart'
     as _iy0bf13l;
 import 'package:serverpod/serverpod.dart' as _is;
@@ -152,6 +162,8 @@ void withServerpod(
 }
 
 class TestEndpoints {
+  late final _ActivityEndpoint activity;
+
   late final _EmailIdpEndpoint emailIdp;
 
   late final _JwtRefreshEndpoint jwtRefresh;
@@ -166,6 +178,10 @@ class _InternalTestEndpoints extends TestEndpoints
     _is.SerializationManager serializationManager,
     _is.EndpointDispatch endpoints,
   ) {
+    activity = _ActivityEndpoint(
+      endpoints,
+      serializationManager,
+    );
     emailIdp = _EmailIdpEndpoint(
       endpoints,
       serializationManager,
@@ -178,6 +194,244 @@ class _InternalTestEndpoints extends TestEndpoints
       endpoints,
       serializationManager,
     );
+  }
+}
+
+class _ActivityEndpoint {
+  _ActivityEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _is.EndpointDispatch _endpointDispatch;
+
+  final _is.SerializationManager _serializationManager;
+
+  _ida.Future<List<_imev5sfu.CampusActivity>> listUpcoming(
+    _ist.TestSessionBuilder sessionBuilder,
+    _iu1qkyfe.ActivityKind? kind,
+    int limit,
+    int offset,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'listUpcoming',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'listUpcoming',
+          parameters: _ist.testObjectToJson({
+            'kind': kind,
+            'limit': limit,
+            'offset': offset,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_imev5sfu.CampusActivity>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i2gnt1bi.ActivityDetails?> getActivity(
+    _ist.TestSessionBuilder sessionBuilder,
+    int activityId,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'getActivity',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'getActivity',
+          parameters: _ist.testObjectToJson({'activityId': activityId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i2gnt1bi.ActivityDetails?>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i2gnt1bi.ActivityDetails> createActivity(
+    _ist.TestSessionBuilder sessionBuilder,
+    _iftmrj3u.CreateActivityRequest request,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'createActivity',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'createActivity',
+          parameters: _ist.testObjectToJson({'request': request}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i2gnt1bi.ActivityDetails>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i2gnt1bi.ActivityDetails> joinActivity(
+    _ist.TestSessionBuilder sessionBuilder,
+    int activityId,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'joinActivity',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'joinActivity',
+          parameters: _ist.testObjectToJson({'activityId': activityId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i2gnt1bi.ActivityDetails>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i2gnt1bi.ActivityDetails> leaveActivity(
+    _ist.TestSessionBuilder sessionBuilder,
+    int activityId,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'leaveActivity',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'leaveActivity',
+          parameters: _ist.testObjectToJson({'activityId': activityId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i2gnt1bi.ActivityDetails>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_i2gnt1bi.ActivityDetails> cancelActivity(
+    _ist.TestSessionBuilder sessionBuilder,
+    int activityId,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'cancelActivity',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'cancelActivity',
+          parameters: _ist.testObjectToJson({'activityId': activityId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_i2gnt1bi.ActivityDetails>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<List<_i1ksolij.ActivityPlan>> listMyPlans(
+    _ist.TestSessionBuilder sessionBuilder,
+    int limit,
+    int offset,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'activity',
+            method: 'listMyPlans',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'activity',
+          methodName: 'listMyPlans',
+          parameters: _ist.testObjectToJson({
+            'limit': limit,
+            'offset': offset,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_i1ksolij.ActivityPlan>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
   }
 }
 

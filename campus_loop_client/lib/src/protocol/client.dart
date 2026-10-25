@@ -11,6 +11,16 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _ida;
+import 'package:campus_loop_client/src/protocol/activities/models/activity_details.dart'
+    as _igi6rhzf;
+import 'package:campus_loop_client/src/protocol/activities/models/activity_kind.dart'
+    as _itvwf7j9;
+import 'package:campus_loop_client/src/protocol/activities/models/activity_plan.dart'
+    as _ioa39b2w;
+import 'package:campus_loop_client/src/protocol/activities/models/campus_activity.dart'
+    as _inbqa15c;
+import 'package:campus_loop_client/src/protocol/activities/models/create_activity_request.dart'
+    as _ihyqk03j;
 import 'package:campus_loop_client/src/protocol/greetings/greeting.dart'
     as _inpefkky;
 import 'package:http/http.dart' as _i85jenna;
@@ -20,6 +30,76 @@ import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
     as _iaic;
 import 'package:serverpod_client/serverpod_client.dart' as _isc;
 import 'protocol.dart' as _il2as5qe;
+
+/// {@category Endpoint}
+class EndpointActivity extends _isc.EndpointRef {
+  EndpointActivity(_isc.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'activity';
+
+  _ida.Future<List<_inbqa15c.CampusActivity>> listUpcoming(
+    _itvwf7j9.ActivityKind? kind,
+    int limit,
+    int offset,
+  ) => caller.callServerEndpoint<List<_inbqa15c.CampusActivity>>(
+    'activity',
+    'listUpcoming',
+    {
+      'kind': kind,
+      'limit': limit,
+      'offset': offset,
+    },
+  );
+
+  _ida.Future<_igi6rhzf.ActivityDetails?> getActivity(int activityId) =>
+      caller.callServerEndpoint<_igi6rhzf.ActivityDetails?>(
+        'activity',
+        'getActivity',
+        {'activityId': activityId},
+      );
+
+  _ida.Future<_igi6rhzf.ActivityDetails> createActivity(
+    _ihyqk03j.CreateActivityRequest request,
+  ) => caller.callServerEndpoint<_igi6rhzf.ActivityDetails>(
+    'activity',
+    'createActivity',
+    {'request': request},
+  );
+
+  _ida.Future<_igi6rhzf.ActivityDetails> joinActivity(int activityId) =>
+      caller.callServerEndpoint<_igi6rhzf.ActivityDetails>(
+        'activity',
+        'joinActivity',
+        {'activityId': activityId},
+      );
+
+  _ida.Future<_igi6rhzf.ActivityDetails> leaveActivity(int activityId) =>
+      caller.callServerEndpoint<_igi6rhzf.ActivityDetails>(
+        'activity',
+        'leaveActivity',
+        {'activityId': activityId},
+      );
+
+  _ida.Future<_igi6rhzf.ActivityDetails> cancelActivity(int activityId) =>
+      caller.callServerEndpoint<_igi6rhzf.ActivityDetails>(
+        'activity',
+        'cancelActivity',
+        {'activityId': activityId},
+      );
+
+  _ida.Future<List<_ioa39b2w.ActivityPlan>> listMyPlans(
+    int limit,
+    int offset,
+  ) => caller.callServerEndpoint<List<_ioa39b2w.ActivityPlan>>(
+    'activity',
+    'listMyPlans',
+    {
+      'limit': limit,
+      'offset': offset,
+    },
+  );
+}
 
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
 /// are made available on the server and enable the corresponding sign-in widget
@@ -302,11 +382,14 @@ class Client extends _isc.ServerpodClientShared {
              disconnectStreamsOnLostInternetConnection,
          httpClientOverride: httpClientOverride,
        ) {
+    activity = EndpointActivity(this);
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     greeting = EndpointGreeting(this);
     modules = Modules(this);
   }
+
+  late final EndpointActivity activity;
 
   late final EndpointEmailIdp emailIdp;
 
@@ -318,6 +401,7 @@ class Client extends _isc.ServerpodClientShared {
 
   @override
   Map<String, _isc.EndpointRef> get endpointRefLookup => {
+    'activity': activity,
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
     'greeting': greeting,
