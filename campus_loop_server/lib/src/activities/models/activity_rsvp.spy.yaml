@@ -1,0 +1,12 @@
+class: ActivityRsvp
+table: activity_rsvp
+fields:
+  activityId: int, relation(parent=campus_activity)
+  userIdentifier: String?, scope=serverOnly
+  joinedAt: DateTime, default=now
+indexes:
+  activity_rsvp_activity_user_unique_idx:
+    fields: activityId, userIdentifier
+    unique: true
+  activity_rsvp_user_joined_idx:
+    fields: userIdentifier, joinedAt

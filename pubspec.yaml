@@ -1,0 +1,11 @@
+name: _
+publish_to: none
+
+environment:
+  sdk: '^3.12.2'
+
+workspace:
+  - campus_loop_client
+  - campus_loop_server
+  - campus_loop_flutter
+

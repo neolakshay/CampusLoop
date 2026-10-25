@@ -1,0 +1,11 @@
+class: CreateActivityRequest
+fields:
+  kind: ActivityKind
+  title: String
+  description: String
+  topic: String?
+  startsAt: DateTime
+  endsAt: DateTime?
+  location: String
+  capacity: int?
+  organizerName: String

@@ -1,0 +1,5 @@
+exception: ActivityException
+fields:
+  code: ActivityErrorCode
+  message: String
+  field: String?

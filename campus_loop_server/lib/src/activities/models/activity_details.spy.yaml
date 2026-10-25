@@ -1,0 +1,6 @@
+class: ActivityDetails
+fields:
+  activity: CampusActivity
+  attendeeCount: int
+  isAttending: bool
+  isOrganizer: bool

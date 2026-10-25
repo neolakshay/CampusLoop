@@ -1,0 +1,8 @@
+enum: ActivityErrorCode
+values:
+  - validation
+  - notFound
+  - full
+  - closed
+  - forbidden
+  - organizerMustCancel

@@ -1,0 +1,6 @@
+class: ActivityPlan
+fields:
+  activity: CampusActivity
+  isOrganizer: bool
+  isAttending: bool
+  joinedAt: DateTime?

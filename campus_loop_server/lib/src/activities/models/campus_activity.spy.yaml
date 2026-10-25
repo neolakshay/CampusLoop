@@ -1,0 +1,21 @@
+class: CampusActivity
+table: campus_activity
+fields:
+  kind: ActivityKind
+  title: String
+  description: String
+  topic: String?
+  startsAt: DateTime
+  endsAt: DateTime?
+  location: String
+  capacity: int?
+  organizerName: String
+  createdByUserIdentifier: String?, scope=serverOnly
+  createdAt: DateTime, default=now
+  status: ActivityStatus, default=active
+  isDemo: bool, default=false
+indexes:
+  campus_activity_status_start_idx:
+    fields: status, startsAt
+  campus_activity_owner_start_idx:
+    fields: createdByUserIdentifier, startsAt

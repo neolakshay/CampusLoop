@@ -1,0 +1,30 @@
+services:
+  # Development services
+  postgres:
+    image: ghcr.io/serverpod/postgres:16
+    ports:
+      - "8090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: campus_loop
+      POSTGRES_PASSWORD: "KXhIpLVGn2JceCmAamckYeUs2Hnbbw7D"
+    volumes:
+      - campus_loop_data:/var/lib/postgresql/data
+
+
+  # Test services
+  postgres_test:
+    image: ghcr.io/serverpod/postgres:16
+    ports:
+      - "9090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: campus_loop_test
+      POSTGRES_PASSWORD: "wrT_wyxAJYJoIn4Fg6bZuNizjBH7ifUs"
+    volumes:
+      - campus_loop_test_data:/var/lib/postgresql/data
+
+
+volumes:
+  campus_loop_data:
+  campus_loop_test_data:
