@@ -31,9 +31,10 @@ class ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCancelled = activity.status == ActivityStatus.cancelled;
-    final attendeeCount = cachedDetails?.attendeeCount ?? 1;
     final isFull =
-        activity.capacity != null && attendeeCount >= activity.capacity!;
+        activity.capacity != null &&
+        cachedDetails != null &&
+        cachedDetails!.attendeeCount >= activity.capacity!;
     final effectiveIsAttending =
         isAttending ?? (cachedDetails?.isAttending ?? false);
     final effectiveIsOrganizer =

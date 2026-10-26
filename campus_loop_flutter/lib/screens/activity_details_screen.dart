@@ -37,7 +37,26 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       _details = widget.state.getCachedDetails(id);
     }
     _isLoading = _details == null;
+    widget.state.addListener(_onStateUpdate);
     _loadDetails();
+  }
+
+  @override
+  void dispose() {
+    widget.state.removeListener(_onStateUpdate);
+    super.dispose();
+  }
+
+  void _onStateUpdate() {
+    final id = widget.activity.id;
+    if (id != null && mounted) {
+      final cached = widget.state.getCachedDetails(id);
+      if (cached != null && cached != _details) {
+        setState(() {
+          _details = cached;
+        });
+      }
+    }
   }
 
   Future<void> _loadDetails() async {

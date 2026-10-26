@@ -2,6 +2,7 @@ import 'package:campus_loop_client/campus_loop_client.dart';
 import 'package:flutter/material.dart';
 
 import '../state/activity_state.dart';
+import '../theme/app_colors.dart';
 import '../widgets/activity_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_view.dart';
@@ -64,7 +65,7 @@ class _FeedScreenState extends State<FeedScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('RSVP confirmed for "${activity.title}"!'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: AppColors.active,
           ),
         );
       }
@@ -73,7 +74,7 @@ class _FeedScreenState extends State<FeedScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(ActivityState.parseErrorMessage(e)),
-            backgroundColor: Colors.red.shade700,
+            backgroundColor: AppColors.cancelled,
           ),
         );
       }

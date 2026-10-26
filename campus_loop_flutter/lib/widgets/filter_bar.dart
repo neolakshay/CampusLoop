@@ -57,6 +57,7 @@ class FilterBar extends StatelessWidget {
                   isSelected: selectedKind == null,
                   onSelected: () => onKindSelected(null),
                   selectedColor: AppColors.primary,
+                  isDark: isDark,
                 ),
                 const SizedBox(width: 8),
                 _buildFilterChip(
@@ -65,6 +66,7 @@ class FilterBar extends StatelessWidget {
                   isSelected: selectedKind == ActivityKind.event,
                   onSelected: () => onKindSelected(ActivityKind.event),
                   selectedColor: AppColors.eventPrimary,
+                  isDark: isDark,
                 ),
                 const SizedBox(width: 8),
                 _buildFilterChip(
@@ -73,6 +75,7 @@ class FilterBar extends StatelessWidget {
                   isSelected: selectedKind == ActivityKind.studySession,
                   onSelected: () => onKindSelected(ActivityKind.studySession),
                   selectedColor: AppColors.studyPrimary,
+                  isDark: isDark,
                 ),
               ],
             ),
@@ -88,6 +91,7 @@ class FilterBar extends StatelessWidget {
     required bool isSelected,
     required VoidCallback onSelected,
     required Color selectedColor,
+    required bool isDark,
   }) {
     return FilterChip(
       selected: isSelected,
@@ -95,13 +99,19 @@ class FilterBar extends StatelessWidget {
       avatar: Icon(
         icon,
         size: 15,
-        color: isSelected ? Colors.white : AppColors.lightTextSecondary,
+        color: isSelected
+            ? Colors.white
+            : (isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary),
       ),
       onSelected: (_) => onSelected(),
       labelStyle: TextStyle(
         fontSize: 13,
         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        color: isSelected ? Colors.white : AppColors.lightTextPrimary,
+        color: isSelected
+            ? Colors.white
+            : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
       ),
       backgroundColor: Colors.transparent,
       selectedColor: selectedColor,
@@ -111,7 +121,9 @@ class FilterBar extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? selectedColor : AppColors.lightBorder,
+          color: isSelected
+              ? selectedColor
+              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
           width: 1,
         ),
       ),
