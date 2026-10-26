@@ -22,12 +22,35 @@ class HomeShellScreen extends StatefulWidget {
 class _HomeShellScreenState extends State<HomeShellScreen> {
   int _currentIndex = 0;
   late final ActivityState _activityState;
+  String _userLabel = 'Signed-in account';
 
   @override
   void initState() {
     super.initState();
     _activityState = ActivityState();
     _activityState.loadFeed();
+    _activityState.loadMyPlans();
+    _loadUserLabel();
+  }
+
+  Future<void> _loadUserLabel() async {
+    try {
+      final profile = await client.modules.serverpod_auth_core.userProfileInfo
+          .get();
+      final userName = profile.userName?.trim();
+      final email = profile.email?.trim();
+      final label = userName != null && userName.isNotEmpty
+          ? userName
+          : email != null && email.isNotEmpty
+          ? email
+          : null;
+
+      if (mounted && label != null) {
+        setState(() => _userLabel = label);
+      }
+    } catch (_) {
+      // Keep the generic signed-in label if the optional profile lookup fails.
+    }
   }
 
   @override
@@ -147,49 +170,52 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                     _activityState.loadMyPlans(refresh: true);
                   }
                 },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'info',
-                    enabled: false,
-                    child: Text(
-                      'Signed in student',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? AppColors.darkTextTertiary
-                            : AppColors.lightTextTertiary,
+                itemBuilder: (context) {
+                  return [
+                    PopupMenuItem(
+                      value: 'info',
+                      enabled: false,
+                      child: Text(
+                        _userLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                        ),
                       ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'refresh',
-                    child: Row(
-                      children: [
-                        Icon(Icons.refresh_rounded, size: 18),
-                        SizedBox(width: 10),
-                        Text('Refresh Data'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh_rounded, size: 18),
+                          SizedBox(width: 10),
+                          Text('Refresh Data'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'sign_out',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.logout_rounded,
-                          size: 18,
-                          color: AppColors.cancelled,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Sign Out',
-                          style: TextStyle(color: AppColors.cancelled),
-                        ),
-                      ],
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'sign_out',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.logout_rounded,
+                            size: 18,
+                            color: AppColors.cancelled,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Sign Out',
+                            style: TextStyle(color: AppColors.cancelled),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ];
+                },
               ),
               const SizedBox(width: 8),
             ],

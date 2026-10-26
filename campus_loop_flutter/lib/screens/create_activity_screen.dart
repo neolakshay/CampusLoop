@@ -1,6 +1,7 @@
 import 'package:campus_loop_client/campus_loop_client.dart';
 import 'package:flutter/material.dart';
 
+import '../client.dart';
 import '../state/activity_state.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_formatter.dart';
@@ -54,6 +55,29 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void initState() {
     super.initState();
     _organizerController.text = 'Student Host';
+    _loadOrganizerName();
+  }
+
+  Future<void> _loadOrganizerName() async {
+    try {
+      final profile = await client.modules.serverpod_auth_core.userProfileInfo
+          .get();
+      final userName = profile.userName?.trim();
+      final email = profile.email?.trim();
+      final name = userName != null && userName.isNotEmpty
+          ? userName
+          : email != null && email.isNotEmpty
+          ? email.split('@').first
+          : null;
+
+      if (mounted &&
+          name != null &&
+          _organizerController.text == 'Student Host') {
+        _organizerController.text = name;
+      }
+    } catch (_) {
+      // Keep the form usable if an optional profile lookup is unavailable.
+    }
   }
 
   @override

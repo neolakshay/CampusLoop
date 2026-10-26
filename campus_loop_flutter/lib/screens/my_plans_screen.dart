@@ -198,7 +198,7 @@ class _MyPlansScreenState extends State<MyPlansScreen>
         ),
         Expanded(
           child: AnimatedBuilder(
-            animation: _tabController,
+            animation: Listenable.merge([_tabController, widget.state]),
             builder: (context, _) {
               if (state.isLoadingPlans) {
                 return const Center(child: CircularProgressIndicator());
@@ -230,6 +230,7 @@ class _MyPlansScreenState extends State<MyPlansScreen>
                                     ? "You haven't joined any activities yet."
                                     : 'Explore campus activities and RSVP to join student events and study groups.'),
                           actionLabel: 'Discover Activities',
+                          actionIcon: Icons.explore_rounded,
                           onAction: widget.onNavigateToFeed,
                         ),
                       ),
@@ -244,7 +245,7 @@ class _MyPlansScreenState extends State<MyPlansScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                   itemCount: plans.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final plan = plans[index];
                     final activity = plan.activity;

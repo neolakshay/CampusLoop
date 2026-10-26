@@ -15,11 +15,15 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (status == ActivityStatus.cancelled) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: AppColors.cancelledBackground,
+          color: isDark
+              ? AppColors.cancelled.withValues(alpha: 0.15)
+              : AppColors.cancelledBackground,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: AppColors.cancelled.withValues(alpha: 0.3),
@@ -48,7 +52,9 @@ class StatusBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: AppColors.fullBackground,
+          color: isDark
+              ? AppColors.full.withValues(alpha: 0.15)
+              : AppColors.fullBackground,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: AppColors.full.withValues(alpha: 0.3),

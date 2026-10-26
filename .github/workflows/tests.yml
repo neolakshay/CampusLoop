@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: '4.0.4'
-      SERVERPOD_PASSWORD_database: 'wrT_wyxAJYJoIn4Fg6bZuNizjBH7ifUs'
-      SERVERPOD_PASSWORD_redis: '7REk92LmxU1i87EWeLA39DnlkZzO6Hmo'
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
 
       # The test config sets `database.dataPath`, so the tests run against an
       # embedded PostgreSQL that Serverpod starts itself. No Docker needed.
@@ -45,6 +45,28 @@ jobs:
         working-directory: campus_loop_server
         run: serverpod generate
 
+      - name: Verify generated protocol is committed
+        run: >-
+          git diff --exit-code --
+          campus_loop_server/lib/src/generated
+          campus_loop_server/test/integration/test_tools
+          campus_loop_client/lib/src/protocol
+
+      - name: Configure disposable embedded database password
+        shell: bash
+        run: |
+          password="$(openssl rand -hex 32)"
+          echo "::add-mask::$password"
+          echo "SERVERPOD_PASSWORD_database=$password" >> "$GITHUB_ENV"
+
       - name: Run tests
         working-directory: campus_loop_server
         run: dart test
+
+      - name: Run Flutter tests
+        working-directory: campus_loop_flutter
+        run: flutter test
+
+      - name: Build Flutter web app
+        working-directory: campus_loop_flutter
+        run: flutter build web --base-href /

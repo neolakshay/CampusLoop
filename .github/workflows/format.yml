@@ -15,7 +15,9 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
+          flutter-version: '3.47.8'
+          channel: stable
+          cache: true
 
       - name: Install dependencies
         run: flutter pub get
@@ -23,3 +25,7 @@ jobs:
       - name: Check formatting
         working-directory: campus_loop_server
         run: dart format --set-exit-if-changed .
+
+      - name: Check Flutter formatting
+        working-directory: campus_loop_flutter
+        run: dart format --set-exit-if-changed lib test

@@ -10,6 +10,8 @@ import 'status_badge.dart';
 class ActivityCard extends StatelessWidget {
   final CampusActivity activity;
   final ActivityDetails? cachedDetails;
+  final bool? isAttending;
+  final bool? isOrganizer;
   final VoidCallback onTap;
   final VoidCallback? onQuickJoin;
   final bool isActionPending;
@@ -18,6 +20,8 @@ class ActivityCard extends StatelessWidget {
     super.key,
     required this.activity,
     this.cachedDetails,
+    this.isAttending,
+    this.isOrganizer,
     required this.onTap,
     this.onQuickJoin,
     this.isActionPending = false,
@@ -30,8 +34,10 @@ class ActivityCard extends StatelessWidget {
     final attendeeCount = cachedDetails?.attendeeCount ?? 1;
     final isFull =
         activity.capacity != null && attendeeCount >= activity.capacity!;
-    final isAttending = cachedDetails?.isAttending ?? false;
-    final isOrganizer = cachedDetails?.isOrganizer ?? false;
+    final effectiveIsAttending =
+        isAttending ?? (cachedDetails?.isAttending ?? false);
+    final effectiveIsOrganizer =
+        isOrganizer ?? (cachedDetails?.isOrganizer ?? false);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -169,11 +175,23 @@ class ActivityCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Capacity bar & Organizer Info
-              CapacityIndicator(
-                attendeeCount: attendeeCount,
-                capacity: activity.capacity,
-                showBar: activity.capacity != null,
-              ),
+              if (cachedDetails != null)
+                CapacityIndicator(
+                  attendeeCount: cachedDetails!.attendeeCount,
+                  capacity: activity.capacity,
+                  showBar: activity.capacity != null,
+                )
+              else if (activity.capacity != null)
+                Text(
+                  'Capacity up to ${activity.capacity} attendees',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                  ),
+                ),
               const SizedBox(height: 12),
 
               const Divider(height: 1, thickness: 0.8),
@@ -213,7 +231,7 @@ class ActivityCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (isOrganizer)
+                  if (effectiveIsOrganizer)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -243,7 +261,7 @@ class ActivityCard extends StatelessWidget {
                         ],
                       ),
                     )
-                  else if (isAttending)
+                  else if (effectiveIsAttending)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

@@ -123,7 +123,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Enter your email to sign in or create your student account.',
+                          'Enter your email to sign in or create a CampusLoop account.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,

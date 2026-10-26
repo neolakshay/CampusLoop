@@ -5,6 +5,7 @@ import '../state/activity_state.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/capacity_indicator.dart';
+import '../widgets/error_view.dart';
 import '../widgets/kind_badge.dart';
 import '../widgets/status_badge.dart';
 
@@ -26,25 +27,63 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   ActivityDetails? _details;
   bool _isLoading = true;
   bool _isSubmitting = false;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
+    final id = widget.activity.id;
+    if (id != null) {
+      _details = widget.state.getCachedDetails(id);
+    }
+    _isLoading = _details == null;
     _loadDetails();
   }
 
   Future<void> _loadDetails() async {
+    if (_details == null && !_isLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadError = null;
+      });
+    }
+
     final id = widget.activity.id;
     if (id == null) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'This activity is unavailable.';
+        });
+      }
       return;
     }
-    final details = await widget.state.fetchDetails(id);
-    if (mounted) {
+
+    try {
+      final details = await widget.state.fetchDetails(id);
+      if (!mounted) return;
       setState(() {
         _details = details;
+        _loadError = details == null
+            ? 'This activity could not be found.'
+            : null;
         _isLoading = false;
       });
+    } catch (error) {
+      if (!mounted) return;
+      final message = ActivityState.parseErrorMessage(error);
+      setState(() {
+        _loadError = message;
+        _isLoading = false;
+      });
+      if (_details != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.cancelled,
+          ),
+        );
+      }
     }
   }
 
@@ -195,11 +234,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activity = _details?.activity ?? widget.activity;
     final isCancelled = activity.status == ActivityStatus.cancelled;
-    final attendeeCount = _details?.attendeeCount ?? 1;
+    final activityId = widget.activity.id;
+    final attendeeCount =
+        _details?.attendeeCount ??
+        (activityId != null
+            ? widget.state.getAttendeeCount(activityId) ?? 1
+            : 1);
     final isFull =
         activity.capacity != null && attendeeCount >= activity.capacity!;
-    final isAttending = _details?.isAttending ?? false;
-    final isOrganizer = _details?.isOrganizer ?? false;
+    final isAttending =
+        _details?.isAttending ??
+        (activityId != null ? widget.state.isUserAttending(activityId) : false);
+    final isOrganizer =
+        _details?.isOrganizer ??
+        (activityId != null ? widget.state.isUserOrganizer(activityId) : false);
 
     return Scaffold(
       appBar: AppBar(
@@ -208,9 +256,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
               ? 'Campus Event'
               : 'Study Session',
         ),
+        bottom: _isLoading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
       ),
-      body: _isLoading
+      body: _details == null && _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _details == null
+          ? ErrorView(
+              message: _loadError ?? 'This activity could not be found.',
+              onRetry: _loadDetails,
+            )
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
               children: [
@@ -438,103 +497,111 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                 ),
               ],
             ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              width: 1,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Row(
-            children: [
-              if (isOrganizer) ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isCancelled || _isSubmitting
-                        ? null
-                        : _handleCancel,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.cancelled,
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.cancel_outlined, size: 20),
-                    label: Text(
-                      isCancelled ? 'Activity Cancelled' : 'Cancel Activity',
-                    ),
+      bottomSheet: _details == null
+          ? null
+          : Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorder,
+                    width: 1,
                   ),
                 ),
-              ] else if (isAttending) ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isCancelled || _isSubmitting
-                        ? null
-                        : _handleLeave,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.cancelled,
-                      side: const BorderSide(color: AppColors.cancelled),
-                    ),
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.exit_to_app_rounded, size: 20),
-                    label: const Text('Leave Activity'),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
                   ),
-                ),
-              ] else ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isCancelled || isFull || _isSubmitting
-                        ? null
-                        : _handleJoin,
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.check_circle_outline_rounded,
-                            size: 20,
+                ],
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    if (isOrganizer) ...[
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: isCancelled || _isSubmitting
+                              ? null
+                              : _handleCancel,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.cancelled,
+                            foregroundColor: Colors.white,
                           ),
-                    label: Text(
-                      isCancelled
-                          ? 'Cancelled'
-                          : (isFull ? 'Full Capacity' : 'RSVP to Join'),
-                    ),
-                  ),
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.cancel_outlined, size: 20),
+                          label: Text(
+                            isCancelled
+                                ? 'Activity Cancelled'
+                                : 'Cancel Activity',
+                          ),
+                        ),
+                      ),
+                    ] else if (isAttending) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: isCancelled || _isSubmitting
+                              ? null
+                              : _handleLeave,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.cancelled,
+                            side: const BorderSide(color: AppColors.cancelled),
+                          ),
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.exit_to_app_rounded, size: 20),
+                          label: const Text('Leave Activity'),
+                        ),
+                      ),
+                    ] else ...[
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: isCancelled || isFull || _isSubmitting
+                              ? null
+                              : _handleJoin,
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  size: 20,
+                                ),
+                          label: Text(
+                            isCancelled
+                                ? 'Cancelled'
+                                : (isFull ? 'Full Capacity' : 'RSVP to Join'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ],
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 

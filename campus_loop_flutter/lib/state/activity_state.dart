@@ -8,6 +8,11 @@ import '../client.dart';
 class ActivityState extends ChangeNotifier {
   static const int _pageSize = 20;
 
+  bool _disposed = false;
+  int _feedRequestGeneration = 0;
+  int _plansRequestGeneration = 0;
+  int _nextFeedOffset = 0;
+
   // --- Feed State ---
   final List<CampusActivity> _feedActivities = [];
   List<CampusActivity> get feedActivities {
@@ -45,6 +50,9 @@ class ActivityState extends ChangeNotifier {
   String? _feedError;
   String? get feedError => _feedError;
 
+  String? _feedLoadMoreError;
+  String? get feedLoadMoreError => _feedLoadMoreError;
+
   // --- My Plans State ---
   final List<ActivityPlan> _myPlans = [];
   List<ActivityPlan> get myPlans => List.unmodifiable(_myPlans);
@@ -59,29 +67,64 @@ class ActivityState extends ChangeNotifier {
   final Map<int, ActivityDetails> _detailsCache = {};
   ActivityDetails? getCachedDetails(int id) => _detailsCache[id];
 
+  /// Checks if the current student is attending the given activity
+  bool isUserAttending(int activityId) {
+    final cached = _detailsCache[activityId];
+    if (cached != null) return cached.isAttending;
+    return _myPlans.any((p) => p.activity.id == activityId && p.isAttending);
+  }
+
+  /// Checks if the current student is the organizer of the given activity
+  bool isUserOrganizer(int activityId) {
+    final cached = _detailsCache[activityId];
+    if (cached != null) return cached.isOrganizer;
+    return _myPlans.any((p) => p.activity.id == activityId && p.isOrganizer);
+  }
+
+  /// Returns attendee count from cached details if available
+  int? getAttendeeCount(int activityId) {
+    return _detailsCache[activityId]?.attendeeCount;
+  }
+
   final Set<int> _pendingActionIds = {};
   bool isActionPending(int id) => _pendingActionIds.contains(id);
 
   bool _isCreating = false;
   bool get isCreating => _isCreating;
 
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  void _notifyListeners() {
+    if (!_disposed) notifyListeners();
+  }
+
   // -------------------------------------------------------------
   // Feed operations
   // -------------------------------------------------------------
 
   Future<void> loadFeed({bool refresh = false}) async {
+    if (_disposed) return;
+    if (!refresh && (_isLoadingFeed || _isLoadingMore)) return;
+
+    final requestGeneration = ++_feedRequestGeneration;
     if (refresh) {
       _isRefreshing = true;
+      _isLoadingFeed = _feedActivities.isEmpty;
+      _isLoadingMore = false;
       _hasMoreFeed = true;
       _feedError = null;
+      _feedLoadMoreError = null;
     } else {
-      if (_isLoadingFeed || _isLoadingMore) return;
       _isLoadingFeed = _feedActivities.isEmpty;
       _feedError = null;
     }
-    notifyListeners();
+    _notifyListeners();
 
-    final offset = refresh ? 0 : _feedActivities.length;
+    final offset = refresh ? 0 : _nextFeedOffset;
 
     try {
       final items = await client.activity.listUpcoming(
@@ -94,53 +137,74 @@ class ActivityState extends ChangeNotifier {
         _feedActivities.clear();
       }
 
-      _feedActivities.addAll(items);
+      _appendUniqueActivities(items);
+      _nextFeedOffset = offset + items.length;
+
       _hasMoreFeed = items.length >= _pageSize;
       _feedError = null;
+      _feedLoadMoreError = null;
     } catch (e) {
-      _feedError = parseErrorMessage(e);
+      if (!_disposed && requestGeneration == _feedRequestGeneration) {
+        _feedError = parseErrorMessage(e);
+      }
     } finally {
-      _isLoadingFeed = false;
-      _isRefreshing = false;
-      _isLoadingMore = false;
-      notifyListeners();
+      if (!_disposed && requestGeneration == _feedRequestGeneration) {
+        _isLoadingFeed = false;
+        _isRefreshing = false;
+        _isLoadingMore = false;
+        _notifyListeners();
+      }
     }
   }
 
-  Future<void> loadMoreFeed() async {
-    if (!_hasMoreFeed || _isLoadingMore || _isLoadingFeed || _isRefreshing) {
+  Future<void> loadMoreFeed({bool retry = false}) async {
+    if (_disposed ||
+        !_hasMoreFeed ||
+        _isLoadingMore ||
+        _isLoadingFeed ||
+        _isRefreshing ||
+        (_feedLoadMoreError != null && !retry)) {
       return;
     }
+    final requestGeneration = _feedRequestGeneration;
     _isLoadingMore = true;
-    notifyListeners();
+    _feedLoadMoreError = null;
+    _notifyListeners();
 
     try {
       final items = await client.activity.listUpcoming(
         _selectedKind,
         _pageSize,
-        _feedActivities.length,
+        _nextFeedOffset,
       );
+      if (_disposed || requestGeneration != _feedRequestGeneration) return;
 
-      _feedActivities.addAll(items);
+      _appendUniqueActivities(items);
+      _nextFeedOffset += items.length;
+
       _hasMoreFeed = items.length >= _pageSize;
     } catch (e) {
-      // Do not replace whole feed error, just stop loading more
+      if (!_disposed && requestGeneration == _feedRequestGeneration) {
+        _feedLoadMoreError = parseErrorMessage(e);
+      }
     } finally {
-      _isLoadingMore = false;
-      notifyListeners();
+      if (!_disposed && requestGeneration == _feedRequestGeneration) {
+        _isLoadingMore = false;
+        _notifyListeners();
+      }
     }
   }
 
   void setKindFilter(ActivityKind? kind) {
     if (_selectedKind == kind) return;
     _selectedKind = kind;
-    notifyListeners();
+    _notifyListeners();
     loadFeed(refresh: true);
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
-    notifyListeners();
+    _notifyListeners();
   }
 
   // -------------------------------------------------------------
@@ -148,19 +212,26 @@ class ActivityState extends ChangeNotifier {
   // -------------------------------------------------------------
 
   Future<void> loadMyPlans({bool refresh = false}) async {
+    if (_disposed || (_isLoadingPlans && !refresh)) return;
+    final requestGeneration = ++_plansRequestGeneration;
     _isLoadingPlans = true;
     _plansError = null;
-    notifyListeners();
+    _notifyListeners();
 
     try {
       final plans = await client.activity.listMyPlans(30, 0);
+      if (_disposed || requestGeneration != _plansRequestGeneration) return;
       _myPlans.clear();
       _myPlans.addAll(plans);
     } catch (e) {
-      _plansError = parseErrorMessage(e);
+      if (!_disposed && requestGeneration == _plansRequestGeneration) {
+        _plansError = parseErrorMessage(e);
+      }
     } finally {
-      _isLoadingPlans = false;
-      notifyListeners();
+      if (!_disposed && requestGeneration == _plansRequestGeneration) {
+        _isLoadingPlans = false;
+        _notifyListeners();
+      }
     }
   }
 
@@ -169,17 +240,15 @@ class ActivityState extends ChangeNotifier {
   // -------------------------------------------------------------
 
   Future<ActivityDetails?> fetchDetails(int activityId) async {
-    try {
-      final details = await client.activity.getActivity(activityId);
-      if (details != null) {
-        _detailsCache[activityId] = details;
-        _updateActivityInLists(details.activity);
-        notifyListeners();
-      }
-      return details;
-    } catch (e) {
-      return null;
+    if (_disposed) return null;
+    final details = await client.activity.getActivity(activityId);
+    if (_disposed) return details;
+    if (details != null) {
+      _detailsCache[activityId] = details;
+      _updateActivityInLists(details.activity);
+      _notifyListeners();
     }
+    return details;
   }
 
   // -------------------------------------------------------------
@@ -187,25 +256,22 @@ class ActivityState extends ChangeNotifier {
   // -------------------------------------------------------------
 
   Future<ActivityDetails> createActivity(CreateActivityRequest request) async {
+    if (_disposed) {
+      throw StateError('Activity state is no longer active.');
+    }
     _isCreating = true;
-    notifyListeners();
+    _notifyListeners();
 
     try {
       final details = await client.activity.createActivity(request);
+      if (_disposed) return details;
       final newActivity = details.activity;
       final id = newActivity.id;
       if (id != null) {
         _detailsCache[id] = details;
       }
 
-      // Prepend to feed if matches current filter
-      if (_selectedKind == null || _selectedKind == newActivity.kind) {
-        _feedActivities.insert(0, newActivity);
-      }
-
-      // Add to my plans
-      _myPlans.insert(
-        0,
+      _upsertPlan(
         ActivityPlan(
           activity: newActivity,
           isOrganizer: true,
@@ -213,11 +279,16 @@ class ActivityState extends ChangeNotifier {
           joinedAt: DateTime.now().toUtc(),
         ),
       );
+      // Reload the server's ordered page rather than prepending an activity
+      // that may start after the current page boundary.
+      await loadFeed(refresh: true);
 
       return details;
     } finally {
-      _isCreating = false;
-      notifyListeners();
+      if (!_disposed) {
+        _isCreating = false;
+        _notifyListeners();
+      }
     }
   }
 
@@ -226,77 +297,76 @@ class ActivityState extends ChangeNotifier {
   // -------------------------------------------------------------
 
   Future<ActivityDetails> joinActivity(int activityId) async {
+    if (_disposed) {
+      throw StateError('Activity state is no longer active.');
+    }
     _pendingActionIds.add(activityId);
-    notifyListeners();
+    _notifyListeners();
 
     try {
       final updatedDetails = await client.activity.joinActivity(activityId);
+      if (_disposed) return updatedDetails;
       _detailsCache[activityId] = updatedDetails;
       _updateActivityInLists(updatedDetails.activity);
 
-      // Update plans list
-      final planIndex = _myPlans.indexWhere((p) => p.activity.id == activityId);
-      if (planIndex >= 0) {
-        _myPlans[planIndex] = ActivityPlan(
+      final existingPlanIndex = _myPlans.indexWhere(
+        (plan) => plan.activity.id == activityId,
+      );
+      _upsertPlan(
+        ActivityPlan(
           activity: updatedDetails.activity,
           isOrganizer: updatedDetails.isOrganizer,
           isAttending: true,
-          joinedAt: _myPlans[planIndex].joinedAt ?? DateTime.now().toUtc(),
-        );
-      } else {
-        _myPlans.add(
-          ActivityPlan(
-            activity: updatedDetails.activity,
-            isOrganizer: updatedDetails.isOrganizer,
-            isAttending: true,
-            joinedAt: DateTime.now().toUtc(),
-          ),
-        );
-      }
+          joinedAt: existingPlanIndex < 0
+              ? DateTime.now().toUtc()
+              : _myPlans[existingPlanIndex].joinedAt ?? DateTime.now().toUtc(),
+        ),
+      );
 
       return updatedDetails;
     } finally {
-      _pendingActionIds.remove(activityId);
-      notifyListeners();
+      if (!_disposed) {
+        _pendingActionIds.remove(activityId);
+        _notifyListeners();
+      }
     }
   }
 
   Future<ActivityDetails> leaveActivity(int activityId) async {
+    if (_disposed) {
+      throw StateError('Activity state is no longer active.');
+    }
     _pendingActionIds.add(activityId);
-    notifyListeners();
+    _notifyListeners();
 
     try {
       final updatedDetails = await client.activity.leaveActivity(activityId);
+      if (_disposed) return updatedDetails;
       _detailsCache[activityId] = updatedDetails;
       _updateActivityInLists(updatedDetails.activity);
 
       // Remove or update from plans
-      _myPlans.removeWhere(
-        (p) => p.activity.id == activityId && !p.isOrganizer,
-      );
-      final planIndex = _myPlans.indexWhere((p) => p.activity.id == activityId);
-      if (planIndex >= 0) {
-        _myPlans[planIndex] = ActivityPlan(
-          activity: updatedDetails.activity,
-          isOrganizer: true,
-          isAttending: false,
-          joinedAt: null,
-        );
-      }
+      _myPlans.removeWhere((plan) => plan.activity.id == activityId);
 
       return updatedDetails;
     } finally {
-      _pendingActionIds.remove(activityId);
-      notifyListeners();
+      if (!_disposed) {
+        _pendingActionIds.remove(activityId);
+        _notifyListeners();
+      }
     }
   }
 
   Future<ActivityDetails> cancelActivity(int activityId) async {
+    if (_disposed) {
+      throw StateError('Activity state is no longer active.');
+    }
     _pendingActionIds.add(activityId);
-    notifyListeners();
+    _notifyListeners();
 
     try {
       final updatedDetails = await client.activity.cancelActivity(activityId);
+      if (_disposed) return updatedDetails;
       _detailsCache[activityId] = updatedDetails;
 
       // Cancelled activities are removed from upcoming feed per backend rules
@@ -313,10 +383,14 @@ class ActivityState extends ChangeNotifier {
         );
       }
 
+      await loadFeed(refresh: true);
+
       return updatedDetails;
     } finally {
-      _pendingActionIds.remove(activityId);
-      notifyListeners();
+      if (!_disposed) {
+        _pendingActionIds.remove(activityId);
+        _notifyListeners();
+      }
     }
   }
 
@@ -329,6 +403,49 @@ class ActivityState extends ChangeNotifier {
         _feedActivities[feedIndex] = activity;
       }
     }
+
+    final planIndex = _myPlans.indexWhere((p) => p.activity.id == activity.id);
+    if (planIndex >= 0) {
+      _myPlans[planIndex] = ActivityPlan(
+        activity: activity,
+        isOrganizer: _myPlans[planIndex].isOrganizer,
+        isAttending: _myPlans[planIndex].isAttending,
+        joinedAt: _myPlans[planIndex].joinedAt,
+      );
+    }
+  }
+
+  void _appendUniqueActivities(List<CampusActivity> activities) {
+    final existingIds = _feedActivities
+        .map((activity) => activity.id)
+        .whereType<int>()
+        .toSet();
+    for (final activity in activities) {
+      final id = activity.id;
+      if (id == null || existingIds.add(id)) {
+        _feedActivities.add(activity);
+      }
+    }
+  }
+
+  void _upsertPlan(ActivityPlan plan) {
+    final index = _myPlans.indexWhere(
+      (existing) => existing.activity.id == plan.activity.id,
+    );
+    if (index < 0) {
+      _myPlans.add(plan);
+    } else {
+      _myPlans[index] = plan;
+    }
+    _sortMyPlans();
+  }
+
+  void _sortMyPlans() {
+    _myPlans.sort((a, b) {
+      final byStart = a.activity.startsAt.compareTo(b.activity.startsAt);
+      if (byStart != 0) return byStart;
+      return (a.activity.id ?? 0).compareTo(b.activity.id ?? 0);
+    });
   }
 
   // -------------------------------------------------------------
