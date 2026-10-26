@@ -129,6 +129,9 @@ class _FeedScreenState extends State<FeedScreen> {
                           actionLabel: hasFilter
                               ? 'Clear Filters'
                               : 'Post Activity',
+                          actionIcon: hasFilter
+                              ? Icons.filter_alt_off_rounded
+                              : Icons.add_rounded,
                           onAction: hasFilter
                               ? () {
                                   state.setKindFilter(null);
@@ -166,15 +169,23 @@ class _FeedScreenState extends State<FeedScreen> {
                     final cachedDetails = activity.id != null
                         ? state.getCachedDetails(activity.id!)
                         : null;
+                    final isAttending = activity.id != null
+                        ? state.isUserAttending(activity.id!)
+                        : false;
+                    final isOrganizer = activity.id != null
+                        ? state.isUserOrganizer(activity.id!)
+                        : false;
 
                     return ActivityCard(
                       activity: activity,
                       cachedDetails: cachedDetails,
+                      isAttending: isAttending,
+                      isOrganizer: isOrganizer,
                       isActionPending:
                           activity.id != null &&
                           state.isActionPending(activity.id!),
                       onTap: () => _openDetails(activity),
-                      onQuickJoin: cachedDetails?.isAttending == true
+                      onQuickJoin: isAttending || isOrganizer
                           ? null
                           : () => _quickJoin(activity),
                     );

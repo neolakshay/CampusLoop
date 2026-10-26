@@ -28,6 +28,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     super.initState();
     _activityState = ActivityState();
     _activityState.loadFeed();
+    _activityState.loadMyPlans();
   }
 
   @override
@@ -147,49 +148,60 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                     _activityState.loadMyPlans(refresh: true);
                   }
                 },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'info',
-                    enabled: false,
-                    child: Text(
-                      'Signed in student',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? AppColors.darkTextTertiary
-                            : AppColors.lightTextTertiary,
+                itemBuilder: (context) {
+                  final user = client.auth.authenticatedUser;
+                  final userLabel =
+                      (user?.userName != null && user!.userName!.isNotEmpty)
+                      ? user.userName!
+                      : (user?.email != null && user!.email!.isNotEmpty)
+                      ? user.email!
+                      : 'Signed in student';
+
+                  return [
+                    PopupMenuItem(
+                      value: 'info',
+                      enabled: false,
+                      child: Text(
+                        userLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                        ),
                       ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'refresh',
-                    child: Row(
-                      children: [
-                        Icon(Icons.refresh_rounded, size: 18),
-                        SizedBox(width: 10),
-                        Text('Refresh Data'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh_rounded, size: 18),
+                          SizedBox(width: 10),
+                          Text('Refresh Data'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'sign_out',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.logout_rounded,
-                          size: 18,
-                          color: AppColors.cancelled,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Sign Out',
-                          style: TextStyle(color: AppColors.cancelled),
-                        ),
-                      ],
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'sign_out',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.logout_rounded,
+                            size: 18,
+                            color: AppColors.cancelled,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Sign Out',
+                            style: TextStyle(color: AppColors.cancelled),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ];
+                },
               ),
               const SizedBox(width: 8),
             ],

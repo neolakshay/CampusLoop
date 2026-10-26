@@ -10,6 +10,8 @@ import 'status_badge.dart';
 class ActivityCard extends StatelessWidget {
   final CampusActivity activity;
   final ActivityDetails? cachedDetails;
+  final bool? isAttending;
+  final bool? isOrganizer;
   final VoidCallback onTap;
   final VoidCallback? onQuickJoin;
   final bool isActionPending;
@@ -18,6 +20,8 @@ class ActivityCard extends StatelessWidget {
     super.key,
     required this.activity,
     this.cachedDetails,
+    this.isAttending,
+    this.isOrganizer,
     required this.onTap,
     this.onQuickJoin,
     this.isActionPending = false,
@@ -30,8 +34,10 @@ class ActivityCard extends StatelessWidget {
     final attendeeCount = cachedDetails?.attendeeCount ?? 1;
     final isFull =
         activity.capacity != null && attendeeCount >= activity.capacity!;
-    final isAttending = cachedDetails?.isAttending ?? false;
-    final isOrganizer = cachedDetails?.isOrganizer ?? false;
+    final effectiveIsAttending =
+        isAttending ?? (cachedDetails?.isAttending ?? false);
+    final effectiveIsOrganizer =
+        isOrganizer ?? (cachedDetails?.isOrganizer ?? false);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -213,7 +219,7 @@ class ActivityCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (isOrganizer)
+                  if (effectiveIsOrganizer)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -243,7 +249,7 @@ class ActivityCard extends StatelessWidget {
                         ],
                       ),
                     )
-                  else if (isAttending)
+                  else if (effectiveIsAttending)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

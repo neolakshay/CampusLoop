@@ -14,6 +14,8 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -23,7 +25,9 @@ class ErrorView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.cancelledBackground,
+                color: isDark
+                    ? AppColors.cancelled.withValues(alpha: 0.15)
+                    : AppColors.cancelledBackground,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -38,6 +42,9 @@ class ErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -45,7 +52,9 @@ class ErrorView extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
               ),
             ),
             const SizedBox(height: 20),

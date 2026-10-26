@@ -30,13 +30,18 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    final id = widget.activity.id;
+    if (id != null) {
+      _details = widget.state.getCachedDetails(id);
+    }
+    _isLoading = _details == null;
     _loadDetails();
   }
 
   Future<void> _loadDetails() async {
     final id = widget.activity.id;
     if (id == null) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
     final details = await widget.state.fetchDetails(id);
@@ -195,11 +200,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activity = _details?.activity ?? widget.activity;
     final isCancelled = activity.status == ActivityStatus.cancelled;
-    final attendeeCount = _details?.attendeeCount ?? 1;
+    final activityId = widget.activity.id;
+    final attendeeCount =
+        _details?.attendeeCount ??
+        (activityId != null
+            ? widget.state.getAttendeeCount(activityId) ?? 1
+            : 1);
     final isFull =
         activity.capacity != null && attendeeCount >= activity.capacity!;
-    final isAttending = _details?.isAttending ?? false;
-    final isOrganizer = _details?.isOrganizer ?? false;
+    final isAttending =
+        _details?.isAttending ??
+        (activityId != null ? widget.state.isUserAttending(activityId) : false);
+    final isOrganizer =
+        _details?.isOrganizer ??
+        (activityId != null ? widget.state.isUserOrganizer(activityId) : false);
 
     return Scaffold(
       appBar: AppBar(
@@ -208,236 +222,235 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
               ? 'Campus Event'
               : 'Study Session',
         ),
+        bottom: _isLoading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-              children: [
-                // Cancelled banner if applicable
-                if (isCancelled) ...[
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.cancelledBackground,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.cancelled.withValues(alpha: 0.3),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+        children: [
+          // Cancelled banner if applicable
+          if (isCancelled) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.cancelledBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.cancelled.withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.cancelled,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'This activity has been cancelled by the organizer.',
+                      style: TextStyle(
+                        color: AppColors.cancelled,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: AppColors.cancelled,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'This activity has been cancelled by the organizer.',
-                            style: TextStyle(
-                              color: AppColors.cancelled,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                  const SizedBox(height: 16),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
-                // Badges Row
-                Row(
-                  children: [
-                    KindBadge(kind: activity.kind),
-                    if (activity.topic != null &&
-                        activity.topic!.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.darkSurfaceVariant
-                              : AppColors.lightSurfaceVariant,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          activity.topic!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const Spacer(),
-                    StatusBadge(status: activity.status, isFull: isFull),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Title
-                Text(
-                  activity.title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    decoration: isCancelled ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Date & Time Box
-                _buildInfoCard(
-                  icon: Icons.calendar_today_rounded,
-                  iconColor: AppColors.primary,
-                  title: 'Date & Time',
-                  content: DateFormatter.formatTimeRange(
-                    activity.startsAt,
-                    activity.endsAt,
-                  ),
-                  subtitle:
-                      DateFormatter.formatDuration(
-                            activity.startsAt,
-                            activity.endsAt,
-                          ) !=
-                          null
-                      ? 'Duration: ${DateFormatter.formatDuration(activity.startsAt, activity.endsAt)}'
-                      : null,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-
-                // Location Box
-                _buildInfoCard(
-                  icon: Icons.location_on_rounded,
-                  iconColor: AppColors.secondary,
-                  title: 'Location',
-                  content: activity.location,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-
-                // Capacity & Attendees Box
+          // Badges Row
+          Row(
+            children: [
+              KindBadge(kind: activity.kind),
+              if (activity.topic != null && activity.topic!.isNotEmpty) ...[
+                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? AppColors.darkSurface
-                        : AppColors.lightSurface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
+                        ? AppColors.darkSurfaceVariant
+                        : AppColors.lightSurfaceVariant,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    activity.topic!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                       color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.people_alt_rounded,
-                                size: 20,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Attendance & Capacity',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (isFull)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.fullBackground,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'Full Capacity',
-                                style: TextStyle(
-                                  color: AppColors.full,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      CapacityIndicator(
-                        attendeeCount: attendeeCount,
-                        capacity: activity.capacity,
-                        showBar: true,
-                      ),
-                      if (activity.capacity != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Maximum limit of ${activity.capacity} students enforced by organizer.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Organizer Box
-                _buildInfoCard(
-                  icon: Icons.person_rounded,
-                  iconColor: AppColors.studyPrimary,
-                  title: 'Organized by',
-                  content: activity.organizerName,
-                  subtitle: isOrganizer
-                      ? 'You are the organizer of this activity'
-                      : null,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 20),
-
-                // Description Header & Content
-                Text(
-                  'About this activity',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  activity.description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
-                    height: 1.5,
                   ),
                 ),
               ],
+              const Spacer(),
+              StatusBadge(status: activity.status, isFull: isFull),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Title
+          Text(
+            activity.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              decoration: isCancelled ? TextDecoration.lineThrough : null,
             ),
+          ),
+          const SizedBox(height: 20),
+
+          // Date & Time Box
+          _buildInfoCard(
+            icon: Icons.calendar_today_rounded,
+            iconColor: AppColors.primary,
+            title: 'Date & Time',
+            content: DateFormatter.formatTimeRange(
+              activity.startsAt,
+              activity.endsAt,
+            ),
+            subtitle:
+                DateFormatter.formatDuration(
+                      activity.startsAt,
+                      activity.endsAt,
+                    ) !=
+                    null
+                ? 'Duration: ${DateFormatter.formatDuration(activity.startsAt, activity.endsAt)}'
+                : null,
+            isDark: isDark,
+          ),
+          const SizedBox(height: 12),
+
+          // Location Box
+          _buildInfoCard(
+            icon: Icons.location_on_rounded,
+            iconColor: AppColors.secondary,
+            title: 'Location',
+            content: activity.location,
+            isDark: isDark,
+          ),
+          const SizedBox(height: 12),
+
+          // Capacity & Attendees Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.people_alt_rounded,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Attendance & Capacity',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isFull)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.fullBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Full Capacity',
+                          style: TextStyle(
+                            color: AppColors.full,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                CapacityIndicator(
+                  attendeeCount: attendeeCount,
+                  capacity: activity.capacity,
+                  showBar: true,
+                ),
+                if (activity.capacity != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Maximum limit of ${activity.capacity} students enforced by organizer.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Organizer Box
+          _buildInfoCard(
+            icon: Icons.person_rounded,
+            iconColor: AppColors.studyPrimary,
+            title: 'Organized by',
+            content: activity.organizerName,
+            subtitle: isOrganizer
+                ? 'You are the organizer of this activity'
+                : null,
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
+
+          // Description Header & Content
+          Text(
+            'About this activity',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            activity.description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
       bottomSheet: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

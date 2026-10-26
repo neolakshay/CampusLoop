@@ -7,6 +7,7 @@ class EmptyState extends StatelessWidget {
   final String title;
   final String message;
   final String? actionLabel;
+  final IconData? actionIcon;
   final VoidCallback? onAction;
 
   const EmptyState({
@@ -15,11 +16,14 @@ class EmptyState extends StatelessWidget {
     required this.title,
     required this.message,
     this.actionLabel,
+    this.actionIcon,
     this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -29,13 +33,15 @@ class EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.primaryContainer.withValues(alpha: 0.5),
+                color: isDark
+                    ? AppColors.primaryContainer.withValues(alpha: 0.15)
+                    : AppColors.primaryContainer.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 40,
-                color: AppColors.primary,
+                color: isDark ? AppColors.primaryLight : AppColors.primary,
               ),
             ),
             const SizedBox(height: 18),
@@ -44,6 +50,9 @@ class EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.lightTextPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -51,7 +60,9 @@ class EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.lightTextSecondary,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
                 height: 1.4,
               ),
             ),
@@ -59,7 +70,7 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: onAction,
-                icon: const Icon(Icons.add_rounded, size: 18),
+                icon: Icon(actionIcon ?? Icons.add_rounded, size: 18),
                 label: Text(actionLabel!),
               ),
             ],

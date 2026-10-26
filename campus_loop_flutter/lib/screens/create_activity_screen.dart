@@ -1,6 +1,7 @@
 import 'package:campus_loop_client/campus_loop_client.dart';
 import 'package:flutter/material.dart';
 
+import '../client.dart';
 import '../state/activity_state.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_formatter.dart';
@@ -53,7 +54,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   @override
   void initState() {
     super.initState();
-    _organizerController.text = 'Student Host';
+    final user = client.auth.authenticatedUser;
+    if (user?.userName != null && user!.userName!.trim().isNotEmpty) {
+      _organizerController.text = user.userName!.trim();
+    } else if (user?.email != null && user!.email!.trim().isNotEmpty) {
+      _organizerController.text = user.email!.trim().split('@').first;
+    } else {
+      _organizerController.text = 'Student Host';
+    }
   }
 
   @override

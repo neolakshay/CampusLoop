@@ -16,22 +16,27 @@ class CapacityIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final secondaryColor = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
     if (capacity == null) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.group_outlined,
             size: 14,
-            color: AppColors.lightTextSecondary,
+            color: secondaryColor,
           ),
           const SizedBox(width: 4),
           Text(
             '$attendeeCount attending',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppColors.lightTextSecondary,
+              color: secondaryColor,
             ),
           ),
         ],
@@ -58,7 +63,7 @@ class CapacityIndicator extends StatelessWidget {
             Icon(
               Icons.people_alt_outlined,
               size: 14,
-              color: isFull ? AppColors.full : AppColors.lightTextSecondary,
+              color: isFull ? AppColors.full : secondaryColor,
             ),
             const SizedBox(width: 5),
             Text(
@@ -72,9 +77,7 @@ class CapacityIndicator extends StatelessWidget {
                     : FontWeight.w500,
                 color: isFull
                     ? AppColors.full
-                    : (isNearFull
-                          ? AppColors.studyPrimary
-                          : AppColors.lightTextSecondary),
+                    : (isNearFull ? AppColors.studyPrimary : secondaryColor),
               ),
             ),
           ],
@@ -86,7 +89,9 @@ class CapacityIndicator extends StatelessWidget {
             child: LinearProgressIndicator(
               value: ratio,
               minHeight: 5,
-              backgroundColor: AppColors.lightBorder,
+              backgroundColor: isDark
+                  ? AppColors.darkBorder
+                  : AppColors.lightBorder,
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),

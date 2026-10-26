@@ -59,6 +59,25 @@ class ActivityState extends ChangeNotifier {
   final Map<int, ActivityDetails> _detailsCache = {};
   ActivityDetails? getCachedDetails(int id) => _detailsCache[id];
 
+  /// Checks if the current student is attending the given activity
+  bool isUserAttending(int activityId) {
+    final cached = _detailsCache[activityId];
+    if (cached != null) return cached.isAttending;
+    return _myPlans.any((p) => p.activity.id == activityId && p.isAttending);
+  }
+
+  /// Checks if the current student is the organizer of the given activity
+  bool isUserOrganizer(int activityId) {
+    final cached = _detailsCache[activityId];
+    if (cached != null) return cached.isOrganizer;
+    return _myPlans.any((p) => p.activity.id == activityId && p.isOrganizer);
+  }
+
+  /// Returns attendee count from cached details if available
+  int? getAttendeeCount(int activityId) {
+    return _detailsCache[activityId]?.attendeeCount;
+  }
+
   final Set<int> _pendingActionIds = {};
   bool isActionPending(int id) => _pendingActionIds.contains(id);
 
@@ -94,7 +113,14 @@ class ActivityState extends ChangeNotifier {
         _feedActivities.clear();
       }
 
-      _feedActivities.addAll(items);
+      final existingIds = _feedActivities.map((a) => a.id).toSet();
+      for (final item in items) {
+        if (item.id != null && !existingIds.contains(item.id)) {
+          _feedActivities.add(item);
+          existingIds.add(item.id);
+        }
+      }
+
       _hasMoreFeed = items.length >= _pageSize;
       _feedError = null;
     } catch (e) {
@@ -121,7 +147,14 @@ class ActivityState extends ChangeNotifier {
         _feedActivities.length,
       );
 
-      _feedActivities.addAll(items);
+      final existingIds = _feedActivities.map((a) => a.id).toSet();
+      for (final item in items) {
+        if (item.id != null && !existingIds.contains(item.id)) {
+          _feedActivities.add(item);
+          existingIds.add(item.id);
+        }
+      }
+
       _hasMoreFeed = items.length >= _pageSize;
     } catch (e) {
       // Do not replace whole feed error, just stop loading more
@@ -198,14 +231,20 @@ class ActivityState extends ChangeNotifier {
         _detailsCache[id] = details;
       }
 
-      // Prepend to feed if matches current filter
+      // Insert into feed and maintain chronological ordering by startsAt
       if (_selectedKind == null || _selectedKind == newActivity.kind) {
-        _feedActivities.insert(0, newActivity);
+        _feedActivities.removeWhere((a) => a.id == newActivity.id);
+        _feedActivities.add(newActivity);
+        _feedActivities.sort((a, b) {
+          final byStart = a.startsAt.compareTo(b.startsAt);
+          if (byStart != 0) return byStart;
+          return (a.id ?? 0).compareTo(b.id ?? 0);
+        });
       }
 
-      // Add to my plans
-      _myPlans.insert(
-        0,
+      // Add to my plans and maintain chronological ordering by startsAt
+      _myPlans.removeWhere((p) => p.activity.id == newActivity.id);
+      _myPlans.add(
         ActivityPlan(
           activity: newActivity,
           isOrganizer: true,
@@ -213,6 +252,11 @@ class ActivityState extends ChangeNotifier {
           joinedAt: DateTime.now().toUtc(),
         ),
       );
+      _myPlans.sort((a, b) {
+        final byStart = a.activity.startsAt.compareTo(b.activity.startsAt);
+        if (byStart != 0) return byStart;
+        return (a.activity.id ?? 0).compareTo(b.activity.id ?? 0);
+      });
 
       return details;
     } finally {
@@ -252,6 +296,11 @@ class ActivityState extends ChangeNotifier {
             joinedAt: DateTime.now().toUtc(),
           ),
         );
+        _myPlans.sort((a, b) {
+          final byStart = a.activity.startsAt.compareTo(b.activity.startsAt);
+          if (byStart != 0) return byStart;
+          return (a.activity.id ?? 0).compareTo(b.activity.id ?? 0);
+        });
       }
 
       return updatedDetails;
@@ -328,6 +377,16 @@ class ActivityState extends ChangeNotifier {
       } else {
         _feedActivities[feedIndex] = activity;
       }
+    }
+
+    final planIndex = _myPlans.indexWhere((p) => p.activity.id == activity.id);
+    if (planIndex >= 0) {
+      _myPlans[planIndex] = ActivityPlan(
+        activity: activity,
+        isOrganizer: _myPlans[planIndex].isOrganizer,
+        isAttending: _myPlans[planIndex].isAttending,
+        joinedAt: _myPlans[planIndex].joinedAt,
+      );
     }
   }
 
