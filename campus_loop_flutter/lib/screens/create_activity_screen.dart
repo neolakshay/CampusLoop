@@ -63,17 +63,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       final profile = await client.modules.serverpod_auth_core.userProfileInfo
           .get();
       final userName = profile.userName?.trim();
-      final email = profile.email?.trim();
-      final name = userName != null && userName.isNotEmpty
-          ? userName
-          : email != null && email.isNotEmpty
-          ? email.split('@').first
-          : null;
 
       if (mounted &&
-          name != null &&
+          userName != null &&
+          userName.isNotEmpty &&
           _organizerController.text == 'Student Host') {
-        _organizerController.text = name;
+        _organizerController.text = userName;
       }
     } catch (_) {
       // Keep the form usable if an optional profile lookup is unavailable.

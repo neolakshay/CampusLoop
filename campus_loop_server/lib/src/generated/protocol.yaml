@@ -6,16 +6,11 @@ activity:
   - leaveActivity:
   - cancelActivity:
   - listMyPlans:
-emailIdp:
-  - login:
-  - startRegistration:
-  - verifyRegistrationCode:
-  - finishRegistration:
-  - startPasswordReset:
-  - verifyPasswordResetCode:
-  - finishPasswordReset:
-  - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
+usernamePassword:
+  - register:
+  - login:
+  - hasUsernameCredentials:
 greeting:
   - hello:

@@ -29,6 +29,8 @@ import 'activities/models/activity_rsvp.dart' as _ikc54jsx;
 import 'activities/models/activity_status.dart' as _ievczi9g;
 import 'activities/models/campus_activity.dart' as _iz8d91lk;
 import 'activities/models/create_activity_request.dart' as _iv4m3ter;
+import 'auth/models/username_password_auth_error_code.dart' as _iuqw71oq;
+import 'auth/models/username_password_auth_exception.dart' as _ic58yxdp;
 import 'greetings/greeting.dart' as _izw8z7ou;
 export 'activities/models/activity_details.dart';
 export 'activities/models/activity_error_code.dart';
@@ -39,6 +41,8 @@ export 'activities/models/activity_rsvp.dart';
 export 'activities/models/activity_status.dart';
 export 'activities/models/campus_activity.dart';
 export 'activities/models/create_activity_request.dart';
+export 'auth/models/username_password_auth_error_code.dart';
+export 'auth/models/username_password_auth_exception.dart';
 export 'greetings/greeting.dart';
 export 'client.dart';
 
@@ -103,6 +107,12 @@ class Protocol extends _isc.SerializationManager {
     if (t == _iv4m3ter.CreateActivityRequest) {
       return _iv4m3ter.CreateActivityRequest.fromJson(data) as T;
     }
+    if (t == _iuqw71oq.UsernamePasswordAuthErrorCode) {
+      return _iuqw71oq.UsernamePasswordAuthErrorCode.fromJson(data) as T;
+    }
+    if (t == _ic58yxdp.UsernamePasswordAuthException) {
+      return _ic58yxdp.UsernamePasswordAuthException.fromJson(data) as T;
+    }
     if (t == _izw8z7ou.Greeting) {
       return _izw8z7ou.Greeting.fromJson(data) as T;
     }
@@ -141,6 +151,18 @@ class Protocol extends _isc.SerializationManager {
               : null)
           as T;
     }
+    if (t == _isc.getType<_iuqw71oq.UsernamePasswordAuthErrorCode?>()) {
+      return (data != null
+              ? _iuqw71oq.UsernamePasswordAuthErrorCode.fromJson(data)
+              : null)
+          as T;
+    }
+    if (t == _isc.getType<_ic58yxdp.UsernamePasswordAuthException?>()) {
+      return (data != null
+              ? _ic58yxdp.UsernamePasswordAuthException.fromJson(data)
+              : null)
+          as T;
+    }
     if (t == _isc.getType<_izw8z7ou.Greeting?>()) {
       return (data != null ? _izw8z7ou.Greeting.fromJson(data) : null) as T;
     }
@@ -157,10 +179,10 @@ class Protocol extends _isc.SerializationManager {
           as T;
     }
     try {
-      return _iaic.Protocol().deserialize<T>(data, t);
+      return _iacc.Protocol().deserialize<T>(data, t);
     } on _isc.DeserializationTypeNotFoundException catch (_) {}
     try {
-      return _iacc.Protocol().deserialize<T>(data, t);
+      return _iaic.Protocol().deserialize<T>(data, t);
     } on _isc.DeserializationTypeNotFoundException catch (_) {}
     return super.deserialize<T>(data, t);
   }
@@ -176,6 +198,10 @@ class Protocol extends _isc.SerializationManager {
       _ievczi9g.ActivityStatus => 'ActivityStatus',
       _iz8d91lk.CampusActivity => 'CampusActivity',
       _iv4m3ter.CreateActivityRequest => 'CreateActivityRequest',
+      _iuqw71oq.UsernamePasswordAuthErrorCode =>
+        'UsernamePasswordAuthErrorCode',
+      _ic58yxdp.UsernamePasswordAuthException =>
+        'UsernamePasswordAuthException',
       _izw8z7ou.Greeting => 'Greeting',
       _ => null,
     };
@@ -209,20 +235,24 @@ class Protocol extends _isc.SerializationManager {
         return 'CampusActivity';
       case _iv4m3ter.CreateActivityRequest():
         return 'CreateActivityRequest';
+      case _iuqw71oq.UsernamePasswordAuthErrorCode():
+        return 'UsernamePasswordAuthErrorCode';
+      case _ic58yxdp.UsernamePasswordAuthException():
+        return 'UsernamePasswordAuthException';
       case _izw8z7ou.Greeting():
         return 'Greeting';
-    }
-    className = _iaic.Protocol().getClassNameForObject(data);
-    if (className != null) {
-      return className.contains('.')
-          ? className
-          : 'serverpod_auth_idp.$className';
     }
     className = _iacc.Protocol().getClassNameForObject(data);
     if (className != null) {
       return className.contains('.')
           ? className
           : 'serverpod_auth_core.$className';
+    }
+    className = _iaic.Protocol().getClassNameForObject(data);
+    if (className != null) {
+      return className.contains('.')
+          ? className
+          : 'serverpod_auth_idp.$className';
     }
     return null;
   }
@@ -260,23 +290,29 @@ class Protocol extends _isc.SerializationManager {
     if (dataClassName == 'CreateActivityRequest') {
       return deserialize<_iv4m3ter.CreateActivityRequest>(data['data']);
     }
+    if (dataClassName == 'UsernamePasswordAuthErrorCode') {
+      return deserialize<_iuqw71oq.UsernamePasswordAuthErrorCode>(data['data']);
+    }
+    if (dataClassName == 'UsernamePasswordAuthException') {
+      return deserialize<_ic58yxdp.UsernamePasswordAuthException>(data['data']);
+    }
     if (dataClassName == 'Greeting') {
       return deserialize<_izw8z7ou.Greeting>(data['data']);
-    }
-    if (dataClassName.startsWith('serverpod_auth_idp.')) {
-      data['className'] = dataClassName.substring(19);
-      return _iaic.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod_auth_core.')) {
       data['className'] = dataClassName.substring(20);
       return _iacc.Protocol().deserializeByClassName(data);
     }
+    if (dataClassName.startsWith('serverpod_auth_idp.')) {
+      data['className'] = dataClassName.substring(19);
+      return _iaic.Protocol().deserializeByClassName(data);
+    }
     return super.deserializeByClassName(data);
   }
 
   void _registerHostProtocols() {
-    _iaic.Protocol().registerHostProtocol('campus_loop', this);
     _iacc.Protocol().registerHostProtocol('campus_loop', this);
+    _iaic.Protocol().registerHostProtocol('campus_loop', this);
   }
 
   @override
@@ -292,10 +328,10 @@ class Protocol extends _isc.SerializationManager {
       return null;
     }
     try {
-      return _iaic.Protocol().mapRecordToJson(record);
+      return _iacc.Protocol().mapRecordToJson(record);
     } catch (_) {}
     try {
-      return _iacc.Protocol().mapRecordToJson(record);
+      return _iaic.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

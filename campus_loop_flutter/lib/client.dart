@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:campus_loop_client/campus_loop_client.dart';
-import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
+import 'package:serverpod_auth_core_flutter/serverpod_auth_core_flutter.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
 // When you are running the app on a physical device, you need to set the
