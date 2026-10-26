@@ -30,6 +30,9 @@ import 'activities/models/activity_rsvp.dart' as _ikc54jsx;
 import 'activities/models/activity_status.dart' as _ievczi9g;
 import 'activities/models/campus_activity.dart' as _iz8d91lk;
 import 'activities/models/create_activity_request.dart' as _iv4m3ter;
+import 'auth/models/username_password_account.dart' as _i843895x;
+import 'auth/models/username_password_auth_error_code.dart' as _iuqw71oq;
+import 'auth/models/username_password_auth_exception.dart' as _ic58yxdp;
 import 'greetings/greeting.dart' as _izw8z7ou;
 export 'activities/models/activity_details.dart';
 export 'activities/models/activity_error_code.dart';
@@ -40,6 +43,9 @@ export 'activities/models/activity_rsvp.dart';
 export 'activities/models/activity_status.dart';
 export 'activities/models/campus_activity.dart';
 export 'activities/models/create_activity_request.dart';
+export 'auth/models/username_password_account.dart';
+export 'auth/models/username_password_auth_error_code.dart';
+export 'auth/models/username_password_auth_exception.dart';
 export 'greetings/greeting.dart';
 
 class Protocol extends _is.DatabaseSerializationManager {
@@ -267,8 +273,95 @@ class Protocol extends _is.DatabaseSerializationManager {
       ],
       managed: true,
     ),
-    ..._iais.Protocol.targetTableDefinitions,
+    _isp.TableDefinition(
+      name: 'username_password_account',
+      dartName: 'UsernamePasswordAccount',
+      schema: 'public',
+      module: 'campus_loop',
+      columns: [
+        _isp.ColumnDefinition(
+          name: 'id',
+          columnType: _isp.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int?',
+          columnDefault: 'serial',
+        ),
+        _isp.ColumnDefinition(
+          name: 'authUserId',
+          columnType: _isp.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue',
+        ),
+        _isp.ColumnDefinition(
+          name: 'username',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'usernameKey',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'passwordHash',
+          columnType: _isp.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _isp.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _isp.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+          columnDefault: 'now',
+        ),
+      ],
+      foreignKeys: [
+        _isp.ForeignKeyDefinition(
+          constraintName: 'username_password_account_fk_0',
+          columns: ['authUserId'],
+          referenceTable: 'serverpod_auth_core_user',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _isp.ForeignKeyAction.noAction,
+          onDelete: _isp.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _isp.IndexDefinition(
+          indexName: 'username_password_account_username_key_unique_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'usernameKey',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+        _isp.IndexDefinition(
+          indexName: 'username_password_account_auth_user_unique_idx',
+          tableSpace: null,
+          elements: [
+            _isp.IndexElementDefinition(
+              type: _isp.IndexElementDefinitionType.column,
+              definition: 'authUserId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
     ..._iacs.Protocol.targetTableDefinitions,
+    ..._iais.Protocol.targetTableDefinitions,
     ..._isp.Protocol.targetTableDefinitions,
   ];
 
@@ -326,6 +419,15 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (t == _iv4m3ter.CreateActivityRequest) {
       return _iv4m3ter.CreateActivityRequest.fromJson(data) as T;
     }
+    if (t == _i843895x.UsernamePasswordAccount) {
+      return _i843895x.UsernamePasswordAccount.fromJson(data) as T;
+    }
+    if (t == _iuqw71oq.UsernamePasswordAuthErrorCode) {
+      return _iuqw71oq.UsernamePasswordAuthErrorCode.fromJson(data) as T;
+    }
+    if (t == _ic58yxdp.UsernamePasswordAuthException) {
+      return _ic58yxdp.UsernamePasswordAuthException.fromJson(data) as T;
+    }
     if (t == _izw8z7ou.Greeting) {
       return _izw8z7ou.Greeting.fromJson(data) as T;
     }
@@ -364,6 +466,24 @@ class Protocol extends _is.DatabaseSerializationManager {
               : null)
           as T;
     }
+    if (t == _is.getType<_i843895x.UsernamePasswordAccount?>()) {
+      return (data != null
+              ? _i843895x.UsernamePasswordAccount.fromJson(data)
+              : null)
+          as T;
+    }
+    if (t == _is.getType<_iuqw71oq.UsernamePasswordAuthErrorCode?>()) {
+      return (data != null
+              ? _iuqw71oq.UsernamePasswordAuthErrorCode.fromJson(data)
+              : null)
+          as T;
+    }
+    if (t == _is.getType<_ic58yxdp.UsernamePasswordAuthException?>()) {
+      return (data != null
+              ? _ic58yxdp.UsernamePasswordAuthException.fromJson(data)
+              : null)
+          as T;
+    }
     if (t == _is.getType<_izw8z7ou.Greeting?>()) {
       return (data != null ? _izw8z7ou.Greeting.fromJson(data) : null) as T;
     }
@@ -380,10 +500,10 @@ class Protocol extends _is.DatabaseSerializationManager {
           as T;
     }
     try {
-      return _iais.Protocol().deserialize<T>(data, t);
+      return _iacs.Protocol().deserialize<T>(data, t);
     } on _is.DeserializationTypeNotFoundException catch (_) {}
     try {
-      return _iacs.Protocol().deserialize<T>(data, t);
+      return _iais.Protocol().deserialize<T>(data, t);
     } on _is.DeserializationTypeNotFoundException catch (_) {}
     try {
       return _isp.Protocol().deserialize<T>(data, t);
@@ -402,6 +522,11 @@ class Protocol extends _is.DatabaseSerializationManager {
       _ievczi9g.ActivityStatus => 'ActivityStatus',
       _iz8d91lk.CampusActivity => 'CampusActivity',
       _iv4m3ter.CreateActivityRequest => 'CreateActivityRequest',
+      _i843895x.UsernamePasswordAccount => 'UsernamePasswordAccount',
+      _iuqw71oq.UsernamePasswordAuthErrorCode =>
+        'UsernamePasswordAuthErrorCode',
+      _ic58yxdp.UsernamePasswordAuthException =>
+        'UsernamePasswordAuthException',
       _izw8z7ou.Greeting => 'Greeting',
       _ => null,
     };
@@ -435,20 +560,26 @@ class Protocol extends _is.DatabaseSerializationManager {
         return 'CampusActivity';
       case _iv4m3ter.CreateActivityRequest():
         return 'CreateActivityRequest';
+      case _i843895x.UsernamePasswordAccount():
+        return 'UsernamePasswordAccount';
+      case _iuqw71oq.UsernamePasswordAuthErrorCode():
+        return 'UsernamePasswordAuthErrorCode';
+      case _ic58yxdp.UsernamePasswordAuthException():
+        return 'UsernamePasswordAuthException';
       case _izw8z7ou.Greeting():
         return 'Greeting';
-    }
-    className = _iais.Protocol().getClassNameForObject(data);
-    if (className != null) {
-      return className.contains('.')
-          ? className
-          : 'serverpod_auth_idp.$className';
     }
     className = _iacs.Protocol().getClassNameForObject(data);
     if (className != null) {
       return className.contains('.')
           ? className
           : 'serverpod_auth_core.$className';
+    }
+    className = _iais.Protocol().getClassNameForObject(data);
+    if (className != null) {
+      return className.contains('.')
+          ? className
+          : 'serverpod_auth_idp.$className';
     }
     className = _isp.Protocol().getClassNameForObject(data);
     if (className != null) {
@@ -490,16 +621,25 @@ class Protocol extends _is.DatabaseSerializationManager {
     if (dataClassName == 'CreateActivityRequest') {
       return deserialize<_iv4m3ter.CreateActivityRequest>(data['data']);
     }
+    if (dataClassName == 'UsernamePasswordAccount') {
+      return deserialize<_i843895x.UsernamePasswordAccount>(data['data']);
+    }
+    if (dataClassName == 'UsernamePasswordAuthErrorCode') {
+      return deserialize<_iuqw71oq.UsernamePasswordAuthErrorCode>(data['data']);
+    }
+    if (dataClassName == 'UsernamePasswordAuthException') {
+      return deserialize<_ic58yxdp.UsernamePasswordAuthException>(data['data']);
+    }
     if (dataClassName == 'Greeting') {
       return deserialize<_izw8z7ou.Greeting>(data['data']);
-    }
-    if (dataClassName.startsWith('serverpod_auth_idp.')) {
-      data['className'] = dataClassName.substring(19);
-      return _iais.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod_auth_core.')) {
       data['className'] = dataClassName.substring(20);
       return _iacs.Protocol().deserializeByClassName(data);
+    }
+    if (dataClassName.startsWith('serverpod_auth_idp.')) {
+      data['className'] = dataClassName.substring(19);
+      return _iais.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -509,20 +649,20 @@ class Protocol extends _is.DatabaseSerializationManager {
   }
 
   void _registerHostProtocols() {
-    _iais.Protocol().registerHostProtocol('campus_loop', this);
     _iacs.Protocol().registerHostProtocol('campus_loop', this);
+    _iais.Protocol().registerHostProtocol('campus_loop', this);
   }
 
   @override
   _is.Table? getTableForType(Type t) {
     {
-      var table = _iais.Protocol().getTableForType(t);
+      var table = _iacs.Protocol().getTableForType(t);
       if (table != null) {
         return table;
       }
     }
     {
-      var table = _iacs.Protocol().getTableForType(t);
+      var table = _iais.Protocol().getTableForType(t);
       if (table != null) {
         return table;
       }
@@ -538,6 +678,8 @@ class Protocol extends _is.DatabaseSerializationManager {
         return _ikc54jsx.ActivityRsvp.t;
       case _iz8d91lk.CampusActivity:
         return _iz8d91lk.CampusActivity.t;
+      case _i843895x.UsernamePasswordAccount:
+        return _i843895x.UsernamePasswordAccount.t;
     }
     return null;
   }
@@ -559,10 +701,10 @@ class Protocol extends _is.DatabaseSerializationManager {
       return null;
     }
     try {
-      return _iais.Protocol().mapRecordToJson(record);
+      return _iacs.Protocol().mapRecordToJson(record);
     } catch (_) {}
     try {
-      return _iacs.Protocol().mapRecordToJson(record);
+      return _iais.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

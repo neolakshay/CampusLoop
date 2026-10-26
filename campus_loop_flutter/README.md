@@ -1,15 +1,36 @@
-# campus_loop_flutter
+# CampusLoop Flutter client
 
-A new Flutter project with Serverpod.
+CampusLoop uses username/password authentication through the generated
+Serverpod client. Email, email verification, OTP, and email delivery are not
+required for registration or login.
 
-## Getting Started
+For local credentials and Serverpod startup, see
+[`../campus_loop_server/README.md`](../campus_loop_server/README.md).
 
-This project is a starting point for a Flutter application that is using
-Serverpod.
+From the repository root, resolve packages:
 
-A great starting point for learning Serverpod is our documentation site at:
-[https://docs.serverpod.dev](https://docs.serverpod.dev).
+```sh
+flutter pub get
+```
 
-To run the project, first make sure that the server is running, then do:
+For normal local development, start from `campus_loop_server` with
+`serverpod start`; it launches the configured Flutter web companion. To run
+Flutter separately, keep the API server running and use:
 
-    flutter run
+```sh
+cd campus_loop_flutter
+flutter run -d chrome --dart-define=SERVER_URL=http://localhost:8080/
+```
+
+For a physical device, replace `localhost` with the development machine's
+reachable IP. Existing signed-in accounts without username credentials are
+prompted to set them using their current session. Users with expired legacy
+sessions need the approved account-recovery path before production rollout.
+
+Run Flutter checks/build with:
+
+```sh
+flutter analyze
+flutter test
+flutter build web --base-href /
+```

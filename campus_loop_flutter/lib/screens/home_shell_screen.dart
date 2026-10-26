@@ -38,15 +38,9 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       final profile = await client.modules.serverpod_auth_core.userProfileInfo
           .get();
       final userName = profile.userName?.trim();
-      final email = profile.email?.trim();
-      final label = userName != null && userName.isNotEmpty
-          ? userName
-          : email != null && email.isNotEmpty
-          ? email
-          : null;
 
-      if (mounted && label != null) {
-        setState(() => _userLabel = label);
+      if (mounted && userName != null && userName.isNotEmpty) {
+        setState(() => _userLabel = userName);
       }
     } catch (_) {
       // Keep the generic signed-in label if the optional profile lookup fails.
