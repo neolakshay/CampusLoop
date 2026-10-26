@@ -103,7 +103,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      setState(() => _startDate = pickedDate);
+      setState(() {
+        _startDate = pickedDate;
+        if (_endDate.isBefore(_startDate)) {
+          _endDate = _startDate.add(const Duration(hours: 1, minutes: 30));
+        }
+      });
     }
   }
 

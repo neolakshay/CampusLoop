@@ -15,9 +15,12 @@ class KindBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEvent = kind == ActivityKind.event;
     final primary = isEvent ? AppColors.eventPrimary : AppColors.studyPrimary;
-    final bg = isEvent ? AppColors.eventBackground : AppColors.studyBackground;
+    final bg = isDark
+        ? primary.withValues(alpha: 0.15)
+        : (isEvent ? AppColors.eventBackground : AppColors.studyBackground);
     final icon = isEvent ? Icons.event_rounded : Icons.school_rounded;
     final label = isEvent ? 'Campus Event' : 'Study Session';
 

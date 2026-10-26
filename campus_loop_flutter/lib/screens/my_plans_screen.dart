@@ -471,10 +471,12 @@ class _MyPlansScreenState extends State<MyPlansScreen>
                                           ),
                                         ),
                                       const SizedBox(width: 8),
-                                      const Icon(
+                                      Icon(
                                         Icons.chevron_right_rounded,
                                         size: 20,
-                                        color: AppColors.lightTextTertiary,
+                                        color: isDark
+                                            ? AppColors.darkTextTertiary
+                                            : AppColors.lightTextTertiary,
                                       ),
                                     ],
                                   ),

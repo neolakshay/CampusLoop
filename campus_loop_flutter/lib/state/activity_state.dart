@@ -133,6 +133,8 @@ class ActivityState extends ChangeNotifier {
         offset,
       );
 
+      if (_disposed || requestGeneration != _feedRequestGeneration) return;
+
       if (refresh) {
         _feedActivities.clear();
       }
