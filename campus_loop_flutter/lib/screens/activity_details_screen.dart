@@ -5,6 +5,7 @@ import '../state/activity_state.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/capacity_indicator.dart';
+import '../widgets/error_view.dart';
 import '../widgets/kind_badge.dart';
 import '../widgets/status_badge.dart';
 
@@ -26,6 +27,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   ActivityDetails? _details;
   bool _isLoading = true;
   bool _isSubmitting = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -39,17 +41,49 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   }
 
   Future<void> _loadDetails() async {
+    if (_details == null && !_isLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadError = null;
+      });
+    }
+
     final id = widget.activity.id;
     if (id == null) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'This activity is unavailable.';
+        });
+      }
       return;
     }
-    final details = await widget.state.fetchDetails(id);
-    if (mounted) {
+
+    try {
+      final details = await widget.state.fetchDetails(id);
+      if (!mounted) return;
       setState(() {
         _details = details;
+        _loadError = details == null
+            ? 'This activity could not be found.'
+            : null;
         _isLoading = false;
       });
+    } catch (error) {
+      if (!mounted) return;
+      final message = ActivityState.parseErrorMessage(error);
+      setState(() {
+        _loadError = message;
+        _isLoading = false;
+      });
+      if (_details != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.cancelled,
+          ),
+        );
+      }
     }
   }
 
@@ -229,325 +263,345 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
               )
             : null,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-        children: [
-          // Cancelled banner if applicable
-          if (isCancelled) ...[
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.cancelledBackground,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.cancelled.withValues(alpha: 0.3),
-                ),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: AppColors.cancelled,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'This activity has been cancelled by the organizer.',
-                      style: TextStyle(
-                        color: AppColors.cancelled,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+      body: _details == null && _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _details == null
+          ? ErrorView(
+              message: _loadError ?? 'This activity could not be found.',
+              onRetry: _loadDetails,
+            )
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              children: [
+                // Cancelled banner if applicable
+                if (isCancelled) ...[
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.cancelledBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.cancelled.withValues(alpha: 0.3),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Badges Row
-          Row(
-            children: [
-              KindBadge(kind: activity.kind),
-              if (activity.topic != null && activity.topic!.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurfaceVariant
-                        : AppColors.lightSurfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    activity.topic!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                    ),
-                  ),
-                ),
-              ],
-              const Spacer(),
-              StatusBadge(status: activity.status, isFull: isFull),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Title
-          Text(
-            activity.title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              decoration: isCancelled ? TextDecoration.lineThrough : null,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Date & Time Box
-          _buildInfoCard(
-            icon: Icons.calendar_today_rounded,
-            iconColor: AppColors.primary,
-            title: 'Date & Time',
-            content: DateFormatter.formatTimeRange(
-              activity.startsAt,
-              activity.endsAt,
-            ),
-            subtitle:
-                DateFormatter.formatDuration(
-                      activity.startsAt,
-                      activity.endsAt,
-                    ) !=
-                    null
-                ? 'Duration: ${DateFormatter.formatDuration(activity.startsAt, activity.endsAt)}'
-                : null,
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-
-          // Location Box
-          _buildInfoCard(
-            icon: Icons.location_on_rounded,
-            iconColor: AppColors.secondary,
-            title: 'Location',
-            content: activity.location,
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-
-          // Capacity & Attendees Box
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
+                    child: const Row(
                       children: [
                         Icon(
-                          Icons.people_alt_rounded,
-                          size: 20,
-                          color: AppColors.primary,
+                          Icons.warning_amber_rounded,
+                          color: AppColors.cancelled,
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Attendance & Capacity',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'This activity has been cancelled by the organizer.',
+                            style: TextStyle(
+                              color: AppColors.cancelled,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    if (isFull)
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Badges Row
+                Row(
+                  children: [
+                    KindBadge(kind: activity.kind),
+                    if (activity.topic != null &&
+                        activity.topic!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
+                          horizontal: 10,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.fullBackground,
-                          borderRadius: BorderRadius.circular(12),
+                          color: isDark
+                              ? AppColors.darkSurfaceVariant
+                              : AppColors.lightSurfaceVariant,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'Full Capacity',
+                        child: Text(
+                          activity.topic!,
                           style: TextStyle(
-                            color: AppColors.full,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
                           ),
                         ),
                       ),
+                    ],
+                    const Spacer(),
+                    StatusBadge(status: activity.status, isFull: isFull),
                   ],
                 ),
-                const SizedBox(height: 12),
-                CapacityIndicator(
-                  attendeeCount: attendeeCount,
-                  capacity: activity.capacity,
-                  showBar: true,
+                const SizedBox(height: 16),
+
+                // Title
+                Text(
+                  activity.title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    decoration: isCancelled ? TextDecoration.lineThrough : null,
+                  ),
                 ),
-                if (activity.capacity != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Maximum limit of ${activity.capacity} students enforced by organizer.',
-                    style: TextStyle(
-                      fontSize: 12,
+                const SizedBox(height: 20),
+
+                // Date & Time Box
+                _buildInfoCard(
+                  icon: Icons.calendar_today_rounded,
+                  iconColor: AppColors.primary,
+                  title: 'Date & Time',
+                  content: DateFormatter.formatTimeRange(
+                    activity.startsAt,
+                    activity.endsAt,
+                  ),
+                  subtitle:
+                      DateFormatter.formatDuration(
+                            activity.startsAt,
+                            activity.endsAt,
+                          ) !=
+                          null
+                      ? 'Duration: ${DateFormatter.formatDuration(activity.startsAt, activity.endsAt)}'
+                      : null,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 12),
+
+                // Location Box
+                _buildInfoCard(
+                  icon: Icons.location_on_rounded,
+                  iconColor: AppColors.secondary,
+                  title: 'Location',
+                  content: activity.location,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 12),
+
+                // Capacity & Attendees Box
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkSurface
+                        : AppColors.lightSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
                       color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder,
                     ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.people_alt_rounded,
+                                size: 20,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Attendance & Capacity',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (isFull)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.fullBackground,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Full Capacity',
+                                style: TextStyle(
+                                  color: AppColors.full,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      CapacityIndicator(
+                        attendeeCount: attendeeCount,
+                        capacity: activity.capacity,
+                        showBar: true,
+                      ),
+                      if (activity.capacity != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Maximum limit of ${activity.capacity} students enforced by organizer.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Organizer Box
+                _buildInfoCard(
+                  icon: Icons.person_rounded,
+                  iconColor: AppColors.studyPrimary,
+                  title: 'Organized by',
+                  content: activity.organizerName,
+                  subtitle: isOrganizer
+                      ? 'You are the organizer of this activity'
+                      : null,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 20),
+
+                // Description Header & Content
+                Text(
+                  'About this activity',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  activity.description,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+      bottomSheet: _details == null
+          ? null
+          : Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorder,
+                    width: 1,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
                   ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Organizer Box
-          _buildInfoCard(
-            icon: Icons.person_rounded,
-            iconColor: AppColors.studyPrimary,
-            title: 'Organized by',
-            content: activity.organizerName,
-            subtitle: isOrganizer
-                ? 'You are the organizer of this activity'
-                : null,
-            isDark: isDark,
-          ),
-          const SizedBox(height: 20),
-
-          // Description Header & Content
-          Text(
-            'About this activity',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            activity.description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 15,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              width: 1,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Row(
-            children: [
-              if (isOrganizer) ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isCancelled || _isSubmitting
-                        ? null
-                        : _handleCancel,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.cancelled,
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.cancel_outlined, size: 20),
-                    label: Text(
-                      isCancelled ? 'Activity Cancelled' : 'Cancel Activity',
-                    ),
-                  ),
-                ),
-              ] else if (isAttending) ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isCancelled || _isSubmitting
-                        ? null
-                        : _handleLeave,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.cancelled,
-                      side: const BorderSide(color: AppColors.cancelled),
-                    ),
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.exit_to_app_rounded, size: 20),
-                    label: const Text('Leave Activity'),
-                  ),
-                ),
-              ] else ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isCancelled || isFull || _isSubmitting
-                        ? null
-                        : _handleJoin,
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.check_circle_outline_rounded,
-                            size: 20,
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    if (isOrganizer) ...[
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: isCancelled || _isSubmitting
+                              ? null
+                              : _handleCancel,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.cancelled,
+                            foregroundColor: Colors.white,
                           ),
-                    label: Text(
-                      isCancelled
-                          ? 'Cancelled'
-                          : (isFull ? 'Full Capacity' : 'RSVP to Join'),
-                    ),
-                  ),
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.cancel_outlined, size: 20),
+                          label: Text(
+                            isCancelled
+                                ? 'Activity Cancelled'
+                                : 'Cancel Activity',
+                          ),
+                        ),
+                      ),
+                    ] else if (isAttending) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: isCancelled || _isSubmitting
+                              ? null
+                              : _handleLeave,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.cancelled,
+                            side: const BorderSide(color: AppColors.cancelled),
+                          ),
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.exit_to_app_rounded, size: 20),
+                          label: const Text('Leave Activity'),
+                        ),
+                      ),
+                    ] else ...[
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: isCancelled || isFull || _isSubmitting
+                              ? null
+                              : _handleJoin,
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  size: 20,
+                                ),
+                          label: Text(
+                            isCancelled
+                                ? 'Cancelled'
+                                : (isFull ? 'Full Capacity' : 'RSVP to Join'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ],
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 

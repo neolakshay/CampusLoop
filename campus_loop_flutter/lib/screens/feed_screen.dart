@@ -153,14 +153,28 @@ class _FeedScreenState extends State<FeedScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
                   itemCount:
                       state.feedActivities.length +
-                      (state.isLoadingMore ? 1 : 0),
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      (state.isLoadingMore || state.feedLoadMoreError != null
+                          ? 1
+                          : 0),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     if (index == state.feedActivities.length) {
-                      return const Center(
+                      if (state.isLoadingMore) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      }
+                      return Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: TextButton.icon(
+                            onPressed: () => state.loadMoreFeed(retry: true),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Could not load more. Retry'),
+                          ),
                         ),
                       );
                     }

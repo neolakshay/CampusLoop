@@ -175,11 +175,23 @@ class ActivityCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Capacity bar & Organizer Info
-              CapacityIndicator(
-                attendeeCount: attendeeCount,
-                capacity: activity.capacity,
-                showBar: activity.capacity != null,
-              ),
+              if (cachedDetails != null)
+                CapacityIndicator(
+                  attendeeCount: cachedDetails!.attendeeCount,
+                  capacity: activity.capacity,
+                  showBar: activity.capacity != null,
+                )
+              else if (activity.capacity != null)
+                Text(
+                  'Capacity up to ${activity.capacity} attendees',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                  ),
+                ),
               const SizedBox(height: 12),
 
               const Divider(height: 1, thickness: 0.8),

@@ -245,7 +245,7 @@ class _MyPlansScreenState extends State<MyPlansScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                   itemCount: plans.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final plan = plans[index];
                     final activity = plan.activity;

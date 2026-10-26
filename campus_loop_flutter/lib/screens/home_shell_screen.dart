@@ -22,6 +22,7 @@ class HomeShellScreen extends StatefulWidget {
 class _HomeShellScreenState extends State<HomeShellScreen> {
   int _currentIndex = 0;
   late final ActivityState _activityState;
+  String _userLabel = 'Signed-in account';
 
   @override
   void initState() {
@@ -29,6 +30,27 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     _activityState = ActivityState();
     _activityState.loadFeed();
     _activityState.loadMyPlans();
+    _loadUserLabel();
+  }
+
+  Future<void> _loadUserLabel() async {
+    try {
+      final profile = await client.modules.serverpod_auth_core.userProfileInfo
+          .get();
+      final userName = profile.userName?.trim();
+      final email = profile.email?.trim();
+      final label = userName != null && userName.isNotEmpty
+          ? userName
+          : email != null && email.isNotEmpty
+          ? email
+          : null;
+
+      if (mounted && label != null) {
+        setState(() => _userLabel = label);
+      }
+    } catch (_) {
+      // Keep the generic signed-in label if the optional profile lookup fails.
+    }
   }
 
   @override
@@ -149,20 +171,12 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                   }
                 },
                 itemBuilder: (context) {
-                  final user = client.auth.authenticatedUser;
-                  final userLabel =
-                      (user?.userName != null && user!.userName!.isNotEmpty)
-                      ? user.userName!
-                      : (user?.email != null && user!.email!.isNotEmpty)
-                      ? user.email!
-                      : 'Signed in student';
-
                   return [
                     PopupMenuItem(
                       value: 'info',
                       enabled: false,
                       child: Text(
-                        userLabel,
+                        _userLabel,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
